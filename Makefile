@@ -1,7 +1,7 @@
 SHELL=/bin/sh
 
 PROGRAM = flwm
-VERSION = 0.25
+VERSION = 1.00
 
 CXXFILES = main.C Frame.C Rotated.C Menu.C FrameWindow.C Desktop.C Hotkeys.C
 

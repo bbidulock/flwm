@@ -16,7 +16,9 @@ proc read_wmfile {fname} {
 	set name ""
 	set exec ""
 	while {[gets $f list]>=0} {
-	    if [llength $list]<3 continue
+	    set n 0
+	    catch {set n [llength $list]}
+	    if $n<3 continue
 	    set tag [lindex $list 1]
 	    set value [lrange $list 2 1000]
 	    if [llength $value]==1 {set value [lindex $value 0]}
