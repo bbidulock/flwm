@@ -755,6 +755,7 @@ void Frame::state(short newstate) {
       throw_focus();
       set_state_flag(IGNORE_UNMAP);
       XUnmapWindow(fl_display, fl_xid(this));
+      XUnmapWindow(fl_display, window_);
     } else {
       return; // don't setStateProperty IconicState multiple times
     }
