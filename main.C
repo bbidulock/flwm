@@ -366,6 +366,10 @@ int main(int argc, char** argv) {
 " -cfg color\t\tCursor color\n"
 " -cbg color\t\tCursor outline color"
 );
+#ifndef FL_NORMAL_SIZE // detect new versions of fltk where this is a variable
+  FL_NORMAL_SIZE = 12;
+#endif
+  Fl::set_color(FL_SELECTION_COLOR,0,0,128);
   Root = new Fl_Root();
   Root->show(argc,argv); // fools fltk into using -geometry to set the size
   XSetErrorHandler(xerror_handler);
