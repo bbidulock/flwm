@@ -9,6 +9,9 @@
 #include <FL/Fl_Window.H>
 #include <FL/Fl_Button.H>
 #include <FL/x.H>
+#if FL_MAJOR_VERSION<2
+# define XWindow Window
+#endif
 
 // The state is an enumeration of reasons why the window may be invisible.
 // Only if it is NORMAL is the window visible.
@@ -58,7 +61,7 @@ class Desktop;
 
 class Frame : public Fl_Window {
 
-  Window window_;
+  XWindow window_;
 
   short state_;		// X server state: iconic, withdrawn, normal
   short state_flags_;	// above state flags
@@ -79,14 +82,14 @@ class Frame : public Fl_Window {
   int label_y, label_h; // location of label
   int label_w;		// measured width of printed label
 
-  Window transient_for_xid; // value from X
+  XWindow transient_for_xid; // value from X
   Frame* transient_for_; // the frame for that xid, if found
 
   Frame* revert_to;	// probably the xterm this was run from
 
   Colormap colormap;	// this window's colormap
   int colormapWinCount; // list of other windows to install colormaps for
-  Window *colormapWindows;
+  XWindow *colormapWindows;
   Colormap *window_Colormaps; // their colormaps
 
   Desktop* desktop_;
@@ -101,6 +104,7 @@ class Frame : public Fl_Window {
   int maximize_height();
   int force_x_onscreen(int X, int W);
   int force_y_onscreen(int Y, int H);
+  void place_window();
 
   void sendMessage(Atom, Atom) const;
   void sendConfigureNotify() const;
@@ -122,6 +126,7 @@ class Frame : public Fl_Window {
 
   void set_size(int,int,int,int, int warp=0);
   void resize(int,int,int,int);
+  void layout();
   void show_hide_buttons();
 
   int handle(int);	// handle fltk events
@@ -151,10 +156,10 @@ public:
   static Frame* first;
   Frame* next;		// stacking order, top to bottom
 
-  Frame(Window, XWindowAttributes* = 0);
+  Frame(XWindow, XWindowAttributes* = 0);
   ~Frame();
 
-  Window window() const {return window_;}
+  XWindow window() const {return window_;}
   Frame* transient_for() const {return transient_for_;}
   int is_transient_for(const Frame*) const;
 
@@ -185,8 +190,8 @@ public:
 };
 
 // handy wrappers for those ugly X routines:
-void* getProperty(Window, Atom, Atom = AnyPropertyType, int* length = 0);
-int getIntProperty(Window, Atom, Atom = AnyPropertyType, int deflt = 0);
-void setProperty(Window, Atom, Atom, int);
+void* getProperty(XWindow, Atom, Atom = AnyPropertyType, int* length = 0);
+int getIntProperty(XWindow, Atom, Atom = AnyPropertyType, int deflt = 0);
+void setProperty(XWindow, Atom, Atom, int);
 
 #endif

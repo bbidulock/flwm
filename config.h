@@ -25,6 +25,12 @@
 // nothing is done if this is not defined:
 //#define AUTO_RAISE 0.5
 
+// Perform "smart" autoplacement.
+// New windows are put at positions where they cover as few existing windows
+// as possible. A brute force algorithm is used, so it consumes quite a bit
+// of CPU time.
+#define SMART_PLACEMENT 1
+
 // set this to zero to remove the multiple-desktop code.  This will
 // make flwm about 20K smaller
 #define DESKTOPS 1
