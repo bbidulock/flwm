@@ -261,12 +261,12 @@ spawn_cb(Fl_Widget*, void*n)
 
 static Fl_Menu_Item other_menu_items[] = {
 #if XTERM_MENU_ITEM
-  {"New xterm", 0, spawn_cb, (void*)xtermname, 0, 0, 0, 12},
+  {"New xterm", 0, spawn_cb, (void*)xtermname, 0, 0, 0, MENU_FONT_SIZE},
 #endif
 #if DESKTOPS
-  {"New desktop", 0, new_desktop_cb, 0, 0, 0, 0, 12},
+  {"New desktop", 0, new_desktop_cb, 0, 0, 0, 0, MENU_FONT_SIZE},
 #endif
-  {"Logout", 0, logout_cb, 0, 0, 0, 0, 12},
+  {"Logout", 0, logout_cb, 0, 0, 0, 0, MENU_FONT_SIZE},
   {0}};
 #define num_other_items (sizeof(other_menu_items)/sizeof(Fl_Menu_Item))
 
