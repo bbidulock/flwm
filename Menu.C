@@ -61,6 +61,7 @@ move_frame_callback(Fl_Widget*, void*d)
 
 extern Fl_Window* Root;
 
+#if FL_MAJOR_VERSION < 2
 static void
 frame_label_draw(const Fl_Label* o, int X, int Y, int W, int H, Fl_Align align)
 {
@@ -131,6 +132,8 @@ label_measure(const Fl_Label* o, int& W, int& H)
 #define FRAME_LABEL FL_FREE_LABELTYPE
 #define TEXT_LABEL Fl_Labeltype(FL_FREE_LABELTYPE+1)
 
+#endif // FL_MAJOR_VERSION < 2
+
 ////////////////////////////////////////////////////////////////
 
 static void
@@ -155,7 +158,7 @@ delete_desktop_cb(Fl_Widget*, void* v)
 
 #if ASK_FOR_NEW_DESKTOP_NAME
 
-static Fl_Input* new_desktop_input;
+static Fl_Input* new_desktop_input = 0;
 
 static void
 new_desktop_ok_cb(Fl_Widget* w, void*)
@@ -205,6 +208,7 @@ new_desktop_cb(Fl_Widget*, void*)
 static void
 exit_cb(Fl_Widget*, void*)
 {
+  printf("exit_cb\n");
   Frame::save_protocol();
   exit(0);
 }
@@ -212,7 +216,7 @@ exit_cb(Fl_Widget*, void*)
 static void
 logout_cb(Fl_Widget*, void*)
 {
-  static FrameWindow* w;
+  static FrameWindow* w = 0;
   if (!w) {
     w = new FrameWindow(190,90);
     Fl_Box* l = new Fl_Box(0, 0, 190, 60, "Really log out?");
@@ -419,8 +423,10 @@ ShowTabMenu(int tab)
   static char beenhere;
   if (!beenhere) {
     beenhere = 1;
+#if FL_MAJOR_VERSION < 2
     Fl::set_labeltype(FRAME_LABEL, frame_label_draw, frame_label_measure);
     Fl::set_labeltype(TEXT_LABEL, label_draw, label_measure);
+#endif
     if (exit_flag) {
       Fl_Menu_Item* m = other_menu_items+num_other_items-2;
       m->label("Exit");
@@ -507,8 +513,12 @@ ShowTabMenu(int tab)
 #endif
     for (c = Frame::first; c; c = c->next) {
       if (c->state() == UNMAPPED || c->transient_for()) continue;
+#if FL_MAJOR_VERSION < 2
       init(menu[n],(char*)c);
       menu[n].labeltype(FRAME_LABEL);
+#else
+      init(menu[n],c->label());
+#endif
       menu[n].callback(frame_callback, c);
       if (is_active_frame(c)) preset = menu+n;
       n++;
@@ -537,7 +547,12 @@ ShowTabMenu(int tab)
 	if (c->state() == UNMAPPED || c->transient_for()) continue;
 	if (c->desktop() == d || !c->desktop() && d == Desktop::current()) {
 	  init(menu[n],(char*)c);
+#if FL_MAJOR_VERSION < 2
+	  init(menu[n],(char*)c);
 	  menu[n].labeltype(FRAME_LABEL);
+#else
+	  init(menu[n],c->label());
+#endif
 	  menu[n].callback(d == Desktop::current() ?
 			   frame_callback : move_frame_callback, c);
 	  if (d == Desktop::current() && is_active_frame(c)) preset = menu+n;
@@ -581,12 +596,13 @@ ShowTabMenu(int tab)
       cmd = wmxlist[i];
       cmd += strspn(cmd, "/")-1;
       init(menu[n], cmd+pathlen[level]);
+#if FL_MAJOR_VERSION < 2
 #if DESKTOPS
       if (one_desktop)
 #endif
 	if (!level)
 	  menu[n].labeltype(TEXT_LABEL);
-
+#endif
       int	nextlev = (i==num_wmx-1)?0:strspn(wmxlist[i+1], "/")-1;
       if (nextlev < level) {
 	menu[n].callback(spawn_cb, cmd);
@@ -613,15 +629,19 @@ ShowTabMenu(int tab)
 #endif
 #endif
     memcpy(menu+n, other_menu_items, sizeof(other_menu_items));
+#if FL_MAJOR_VERSION < 2
 #if DESKTOPS
   if (one_desktop)
 #endif
     // fix the menus items so they are indented to align with window names:
     while (menu[n].label()) menu[n++].labeltype(TEXT_LABEL);
+#endif
 
   const Fl_Menu_Item* picked =
     menu->popup(Fl::event_x(), Fl::event_y(), 0, preset);
+#if FL_MAJOR_VERSION < 2
   if (picked && picked->callback()) picked->do_callback(0);
+#endif
 }
 
 void ShowMenu() {ShowTabMenu(0);}

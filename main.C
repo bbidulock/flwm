@@ -69,7 +69,7 @@ extern void click_raise(Frame*);
 // fltk calls this for any events it does not understand:
 static int flwm_event_handler(int e) {
   if (!e) { // XEvent that fltk did not understand.
-    Window window = fl_xevent->xany.window;
+    XWindow window = fl_xevent->xany.window;
     // unfortunately most of the redirect events put the interesting
     // window id in a different place:
     switch (fl_xevent->type) {
@@ -114,7 +114,11 @@ static int flwm_event_handler(int e) {
 	XKeycodeToKeysym(fl_display, fl_xevent->xkey.keycode, 0);
       if (keysym == FL_Alt_L || keysym == FL_Alt_R) {
 	Fl::e_keysym = FL_Enter;
+#if FL_MAJOR_VERSION>1
+	return Fl::modal()->handle(FL_KEYBOARD);
+#else
 	return Fl::grab()->handle(FL_KEYBOARD);
+#endif
       }
       return 0;}
     }
@@ -189,28 +193,26 @@ void flwm_clock_alarm_off(int) {
 #endif
 
 static const char* cfg, *cbg;
+#if FL_MAJOR_VERSION>1
+static fltk::Cursor* cursor = FL_CURSOR_ARROW;
+extern FL_API fltk::Color fl_cursor_fg;
+extern FL_API fltk::Color fl_cursor_bg;
+#else
 static int cursor = FL_CURSOR_ARROW;
-
-static void color_setup(Fl_Color slot, const char* arg, ulong value) {
-  if (arg) {
-    XColor x;
-    if (XParseColor(fl_display, fl_colormap, arg, &x))
-      value = ((x.red>>8)<<24)|((x.green>>8)<<16)|((x.blue));
-  }
-  Fl::set_color(slot, value);
-}
+#endif
 
 static void initialize() {
 
   Display* d = fl_display;
 
 #ifdef TEST
-  Window w = XCreateSimpleWindow(d, root,
+  XWindow w = XCreateSimpleWindow(d, RootWindow(d, fl_screen),
 				 100, 100, 200, 300, 10,
 				 BlackPixel(fl_display, 0),
 //				 WhitePixel(fl_display, 0));
 				 0x1234);
   Frame* frame = new Frame(w);
+  frame->label("flwm test window");
   XSelectInput(d, w,
 	       ExposureMask | StructureNotifyMask |
 	       KeyPressMask | KeyReleaseMask | FocusChangeMask |
@@ -230,9 +232,11 @@ static void initialize() {
 	       ButtonPressMask | ButtonReleaseMask | 
 	       EnterWindowMask | LeaveWindowMask |
 	       KeyPressMask | KeyReleaseMask | KeymapStateMask);
-  color_setup(CURSOR_FG_SLOT, cfg, CURSOR_FG_COLOR<<8);
-  color_setup(CURSOR_BG_SLOT, cbg, CURSOR_BG_COLOR<<8);
+#if FL_MAJOR_VERSION>1
+  Root->cursor(cursor);
+#else
   Root->cursor((Fl_Cursor)cursor, CURSOR_FG_SLOT, CURSOR_BG_SLOT);
+#endif
 
 #ifdef TITLE_FONT
   Fl::set_font(TITLE_FONT_SLOT, TITLE_FONT);
@@ -247,7 +251,7 @@ static void initialize() {
   // Gnome crap:
   // First create a window that can be watched to see if wm dies:
   Atom a = XInternAtom(d, "_WIN_SUPPORTING_WM_CHECK", False);
-  Window win = XCreateSimpleWindow(d, fl_xid(Root), -200, -200, 5, 5, 0, 0, 0);
+  XWindow win = XCreateSimpleWindow(d, fl_xid(Root), -200, -200, 5, 5, 0, 0, 0);
   CARD32 val = win;
   XChangeProperty(d, fl_xid(Root), a, XA_CARDINAL, 32, PropModeReplace, (uchar*)&val, 1);
   XChangeProperty(d, win, a, XA_CARDINAL, 32, PropModeReplace, (uchar*)&val, 1);
@@ -287,7 +291,7 @@ static void initialize() {
 
   // find all the windows and create a Frame for each:
   unsigned int n;
-  Window w1, w2, *wins;
+  XWindow w1, w2, *wins;
   XWindowAttributes attr;
   XQueryTree(d, fl_xid(Root), &w1, &w2, &wins, &n);
   for (i = 0; i < n; ++i) {
@@ -328,8 +332,10 @@ int arg(int argc, char **argv, int &i) {
     cfg = v;
   } else if (!strcmp(s, "cbg")) {
     cbg = v;
+#if FL_MAJOR_VERSION < 2
   } else if (*s == 'c') {
     cursor = atoi(v);
+#endif
   } else if (*s == 'v') {
     int visid = atoi(v);
     fl_open_display();
@@ -350,6 +356,17 @@ int arg(int argc, char **argv, int &i) {
   return 2;
 }
 
+#if FL_MAJOR_VERSION<2
+static void color_setup(Fl_Color slot, const char* arg, ulong value) {
+  if (arg) {
+    XColor x;
+    if (XParseColor(fl_display, fl_colormap, arg, &x))
+      value = ((x.red>>8)<<24)|((x.green>>8)<<16)|((x.blue));
+  }
+  Fl::set_color(slot, value);
+}
+#endif
+
 int main(int argc, char** argv) {
   program_name = filename_name(argv[0]);
   int i; if (Fl::args(argc, argv, i, arg) < argc) Fl::error(
@@ -369,8 +386,22 @@ int main(int argc, char** argv) {
 #ifndef FL_NORMAL_SIZE // detect new versions of fltk where this is a variable
   FL_NORMAL_SIZE = 12;
 #endif
+#if FL_MAJOR_VERSION>1
+  if (cfg) fl_cursor_fg = fltk::color(cfg);
+  if (cbg) fl_cursor_bg = fltk::color(cbg);
+#else
+  fl_open_display();
+  color_setup(CURSOR_FG_SLOT, cfg, CURSOR_FG_COLOR<<8);
+  color_setup(CURSOR_BG_SLOT, cbg, CURSOR_BG_COLOR<<8);
   Fl::set_color(FL_SELECTION_COLOR,0,0,128);
-  Root = new Fl_Root();
+#endif
+  Fl_Root root;
+  Root = &root;
+#if FL_MAJOR_VERSION>1
+  // show() is not a virtual function in fltk2.0, this fools it:
+  fltk::load_theme();
+  root.show();
+#endif
   Root->show(argc,argv); // fools fltk into using -geometry to set the size
   XSetErrorHandler(xerror_handler);
   initialize();

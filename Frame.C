@@ -8,6 +8,7 @@
 #include <FL/fl_draw.H>
 #include "Rotated.H"
 
+
 static Atom wm_state = 0;
 static Atom wm_change_state;
 static Atom wm_protocols;
@@ -63,7 +64,7 @@ int dont_set_event_mask = 0; // used by FrameWindow
 // passed for an already-existing window when the window manager is
 // starting up.  If so we don't want to alter the state, size, or
 // position.  If null than this is a MapRequest of a new window.
-Frame::Frame(Window window, XWindowAttributes* existing) :
+Frame::Frame(XWindow window, XWindowAttributes* existing) :
   Fl_Window(0,0),
   window_(window),
   state_flags_(0),
@@ -223,20 +224,9 @@ Frame::Frame(Window window, XWindowAttributes* existing) :
   show_hide_buttons();
 
   if (autoplace && !existing && !(transient_for() && (x() || y()))) {
-    // autoplacement (stupid version for now)
-    x(Root->x()+(Root->w()-w())/2);
-    y(Root->y()+(Root->h()-h())/2);
-    // move it until it does not hide any existing windows:
-    const int delta = TITLE_WIDTH+LEFT;
-    for (Frame* f = next; f; f = f->next) {
-      if (f->x()+delta > x() && f->y()+delta > y() &&
-	  f->x()+f->w()-delta < x()+w() && f->y()+f->h()-delta < y()+h()) {
-	x(max(x(),f->x()+delta));
-	y(max(y(),f->y()+delta));
-	f = this;
-      }
-    }
+    place_window();
   }
+
   // move window so contents and border are visible:
   x(force_x_onscreen(x(), w()));
   y(force_y_onscreen(y(), h()));
@@ -260,7 +250,8 @@ Frame::Frame(Window window, XWindowAttributes* existing) :
   sattr.bit_gravity = NorthWestGravity;
   sattr.override_redirect = 1;
   sattr.background_pixel = fl_xpixel(FL_GRAY);
-  Fl_X::set_xid(this, XCreateWindow(fl_display, fl_xid(Root),
+  Fl_X::set_xid(this, XCreateWindow(fl_display,
+				    RootWindow(fl_display,fl_screen),
 			     x(), y(), w(), h(), 0,
 			     fl_visual->depth,
 			     InputOutput,
@@ -277,15 +268,140 @@ Frame::Frame(Window window, XWindowAttributes* existing) :
   sendConfigureNotify(); // many apps expect this even if window size unchanged
 
 #if CLICK_RAISES || CLICK_TO_TYPE
-  XGrabButton(fl_display, AnyButton, AnyModifier, window, False,
-	      ButtonPressMask, GrabModeSync, GrabModeAsync, None, None);
+  if (!dont_set_event_mask)
+    XGrabButton(fl_display, AnyButton, AnyModifier, window, False,
+		ButtonPressMask, GrabModeSync, GrabModeAsync, None, None);
 #endif
 
   if (state_ == NORMAL) {
     XMapWindow(fl_display, fl_xid(this));
     if (!existing) activate_if_transient();
   }
+  set_visible();
 }
+
+#if SMART_PLACEMENT
+// Helper functions for "smart" window placement.
+int overlap1(int p1, int l1, int p2, int l2) {
+  int ret = 0;
+  if(p1 <= p2 && p2 <= p1 + l1) {
+    ret = min(p1 + l1 - p2, l2);
+  } else if (p2 <= p1 && p1 <= p2 + l2) {
+    ret = min(p2 + l2 - p1, l1);
+  } 
+  return ret;
+}
+
+int overlap(int x1, int y1, int w1, int h1, int x2, int y2, int w2, int h2) {
+  return (overlap1(x1, w1, x2, w2) * overlap1(y1, h1, y2, h2));
+}
+
+// Compute the overlap with existing windows.
+// For normal windows the overlapping area is taken into account plus a 
+// constant value for every overlapping window.
+// The active window counts twice.
+// For iconic windows half the overlapping area is taken into account.
+int getOverlap(int x, int y, int w, int h, Frame *first, Frame *self) {
+  int ret = 0;
+  short state;
+  for (Frame* f = first; f; f = f->next) {
+    if (f != self) {
+      state = f->state();
+      if (state == NORMAL || state == ICONIC) {
+	int o = overlap(x, y, w, h, f->x(), f->y(), f->w(), f->h());
+	if (state == NORMAL) {
+	  ret = ret + o + (o>0?40000:0) + (o * f->active());
+	} else if (state == ICONIC) {
+	  ret = ret + o/2;
+	}
+      }
+    }
+  }
+  return ret;
+}
+
+// autoplacement (brute force version for now)
+void Frame::place_window() {
+  int min_overlap = -1;
+  int tmp_x, tmp_y, tmp_o;
+  int best_x = 0;
+  int best_y = 0;
+  int _w = w();
+  int _h = h();
+  int max_x = Root->x() + Root->w();
+  int max_y = Root->y() + Root->h();
+  
+  Frame *f1 = Frame::first;
+  for(int i=0;; i++) {
+    if (i==0) {
+      tmp_x = 0;
+    } else if (i==1) {
+      tmp_x = max_x - _w;
+    } else {
+      if (f1 == this) {
+	f1 = f1->next;
+      }
+      if (!f1) {
+	break;
+      }
+      tmp_x = f1->x() + f1->w();
+      f1 = f1->next;
+    }
+    Frame *f2 = Frame::first;
+    for(int j=0;; j++) {
+      if (j==0) {
+	tmp_y = 0;
+      } else if (j==1) {
+	tmp_y = max_y - _h;
+      } else {
+	if (f2 == this) {
+	  f2 = f2->next;
+	}
+	if (!f2) {
+	  break;
+	}
+	tmp_y = f2->y() + f2->h();
+	f2 = f2->next;
+      }
+
+      if ((tmp_x + _w <= max_x) && (tmp_y + _h <= max_y)) {
+	tmp_o = getOverlap(tmp_x, tmp_y, _w, _h, Frame::first, this);
+	if(tmp_o < min_overlap || min_overlap < 0) {
+	  best_x = tmp_x;
+	  best_y = tmp_y;
+	  min_overlap = tmp_o;
+	  if (min_overlap == 0) {
+	    break;
+	  }
+	}
+      }
+    }
+    if (min_overlap == 0) {
+      break;
+    } 
+  }
+  x(best_x);
+  y(best_y);
+}
+
+#else
+
+// autoplacement (stupid version for now)
+void Frame::place_window() {
+  x(Root->x()+(Root->w()-w())/2);
+  y(Root->y()+(Root->h()-h())/2);
+  // move it until it does not hide any existing windows:
+  const int delta = TITLE_WIDTH+LEFT;
+    for (Frame* f = next; f; f = f->next) {
+      if (f->x()+delta > x() && f->y()+delta > y() &&
+	  f->x()+f->w()-delta < x()+w() && f->y()+f->h()-delta < y()+h()) {
+	x(max(x(),f->x()+delta));
+	y(max(y(),f->y()+delta));
+	f = this;
+      }
+    }
+}
+#endif
 
 // modify the passed X & W to a legal horizontal window position
 int Frame::force_x_onscreen(int X, int W) {
@@ -333,10 +449,12 @@ Frame::~Frame() {
   // a legal state value to this location:
   state_ = UNMAPPED;
 
+#if FL_MAJOR_VERSION < 2
   // fix fltk bug:
   fl_xfocus = 0;
   fl_xmousewin = 0;
   Fl::focus_ = 0;
+#endif
 
   // remove any pointers to this:
   Frame** cp; for (cp = &first; *cp; cp = &((*cp)->next))
@@ -554,7 +672,7 @@ int Frame::getMotifHints() {
   // see if they set "input hint" to non-zero:
   // prop[3] should be nonzero but the only example of this I have
   // found is Netscape 3.0 and it sets it to zero...
-  if (!shown() && (prop[0]&4) /*&& prop[3]*/) set_flag(MODAL);
+  if (!shown() && (prop[0]&4) /*&& prop[3]*/) set_flag(::MODAL);
 
   // see if it is forcing the iconize button back on.  This makes
   // transient_for act like group instead...
@@ -578,7 +696,7 @@ void Frame::getColormaps(void) {
     delete[] window_Colormaps;
   }
   int n;
-  Window* cw = (Window*)getProperty(wm_colormap_windows, XA_WINDOW, &n);
+  XWindow* cw = (XWindow*)getProperty(wm_colormap_windows, XA_WINDOW, &n);
   if (cw) {
     colormapWinCount = n;
     colormapWindows = cw;
@@ -644,7 +762,7 @@ int Frame::activate_if_transient() {
 int Frame::activate(int warp) {
   // see if a modal & newer window is up:
   for (Frame* c = first; c && c != this; c = c->next)
-    if (c->flag(MODAL) && c->transient_for() == this)
+    if (c->flag(::MODAL) && c->transient_for() == this)
       if (c->activate(warp)) return 1;
   // ignore invisible windows:
   if (state() != NORMAL || w() <= dwidth) return 0;
@@ -670,14 +788,14 @@ int Frame::activate(int warp) {
   if (active_ != this) {
     if (active_) active_->deactivate();
     active_ = this;
-#if defined(ACTIVE_COLOR)
+#ifdef ACTIVE_COLOR
     XSetWindowAttributes a;
     a.background_pixel = fl_xpixel(FL_SELECTION_COLOR);
     XChangeWindowAttributes(fl_display, fl_xid(this), CWBackPixel, &a);
     labelcolor(contrast(FL_BLACK, FL_SELECTION_COLOR));
     XClearArea(fl_display, fl_xid(this), 2, 2, w()-4, h()-4, 1);
 #else
-#if defined(SHOW_CLOCK)
+#ifdef SHOW_CLOCK
     redraw();
 #endif
 #endif
@@ -690,14 +808,14 @@ int Frame::activate(int warp) {
 // this private function should only be called by constructor and if
 // the window is active():
 void Frame::deactivate() {
-#if defined(ACTIVE_COLOR)
+#ifdef ACTIVE_COLOR
     XSetWindowAttributes a;
     a.background_pixel = fl_xpixel(FL_GRAY);
     XChangeWindowAttributes(fl_display, fl_xid(this), CWBackPixel, &a);
     labelcolor(FL_BLACK);
     XClearArea(fl_display, fl_xid(this), 2, 2, w()-4, h()-4, 1);
 #else
-#if defined(SHOW_CLOCK)
+#ifdef SHOW_CLOCK
     redraw();
 #endif
 #endif
@@ -737,9 +855,9 @@ void Frame::state(short newstate) {
   switch (newstate) {
   case UNMAPPED:
     throw_focus();
-    set_state_flag(IGNORE_UNMAP);
     XUnmapWindow(fl_display, fl_xid(this));
-    XUnmapWindow(fl_display, window_);
+    //set_state_flag(IGNORE_UNMAP);
+    //XUnmapWindow(fl_display, window_);
     XRemoveFromSaveSet(fl_display, window_);
     break;
   case NORMAL:
@@ -753,9 +871,9 @@ void Frame::state(short newstate) {
       XAddToSaveSet(fl_display, window_);
     } else if (oldstate == NORMAL) {
       throw_focus();
-      set_state_flag(IGNORE_UNMAP);
       XUnmapWindow(fl_display, fl_xid(this));
-      XUnmapWindow(fl_display, window_);
+      //set_state_flag(IGNORE_UNMAP);
+      //XUnmapWindow(fl_display, window_);
     } else {
       return; // don't setStateProperty IconicState multiple times
     }
@@ -908,7 +1026,7 @@ void Frame::set_size(int nx, int ny, int nw, int nh, int warp) {
     int old_label_y = label_y;
     int old_label_h = label_h;
     h(nh); show_hide_buttons();
-#ifdef SHOW_CLOCK
+#if 1 //def SHOW_CLOCK
     int t = label_y + 3; // we have to clear the entire label area
 #else
     int t = nh;
@@ -1075,6 +1193,8 @@ void Frame::show_hide_buttons() {
 
 // make sure fltk does not try to set the window size:
 void Frame::resize(int, int, int, int) {}
+// For fltk2.0:
+void Frame::layout() {layout_damage(0);}
 
 ////////////////////////////////////////////////////////////////
 
@@ -1110,19 +1230,27 @@ void Frame::save_protocol() {
 
 ////////////////////////////////////////////////////////////////
 // Drawing code:
+#if FL_MAJOR_VERSION>1
+# include <fltk/Box.h>
+#endif
 
 void Frame::draw() {
   if (flag(NO_BORDER)) return;
   if (!flag(THIN_BORDER)) Fl_Window::draw();
   if (damage() != FL_DAMAGE_CHILD) {
-#if ACTIVE_COLOR
+#ifdef ACTIVE_COLOR
     fl_frame2(active() ? "AAAAJJWW" : "AAAAJJWWNNTT",0,0,w(),h());
     if (active()) {
       fl_color(FL_GRAY_RAMP+('N'-'A'));
       fl_xyline(2, h()-3, w()-3, 2);
     }
 #else
+# if FL_MAJOR_VERSION>1
+    static fltk::FrameBox framebox(0,"AAAAJJWWNNTT");
+    framebox.draw(0,0,w(),h(),style(),fltk::INVISIBLE); // INVISIBLE = draw edge only
+# else
     fl_frame("AAAAWWJJTTNN",0,0,w(),h());
+# endif
 #endif
     if (!flag(THIN_BORDER) && label_h > 3) {
 #ifdef SHOW_CLOCK
@@ -1168,39 +1296,48 @@ void Frame::redraw_clock() {
 #endif
 
 void FrameButton::draw() {
+#if FL_MAJOR_VERSION>1
+  const int x = 0;
+  const int y = 0;
+  FL_UP_BOX->draw(0,0,w(),h(),style(),
+		  value() ? (fltk::INVISIBLE|fltk::VALUE) : fltk::INVISIBLE);
+#else
+  const int x = this->x();
+  const int y = this->y();
   Fl_Widget::draw_box(value() ? FL_DOWN_FRAME : FL_UP_FRAME, FL_GRAY);
+#endif
   fl_color(parent()->labelcolor());
   switch (label()[0]) {
   case 'W':
 #if MINIMIZE_ARROW
-    fl_line (x()+2,y()+(h())/2,x()+w()-4,y()+h()/2);
-    fl_line (x()+2,y()+(h())/2,x()+2+4,y()+h()/2+4);
-    fl_line (x()+2,y()+(h())/2,x()+2+4,y()+h()/2-4);
+    fl_line (x+2,y+(h())/2,x+w()-4,y+h()/2);
+    fl_line (x+2,y+(h())/2,x+2+4,y+h()/2+4);
+    fl_line (x+2,y+(h())/2,x+2+4,y+h()/2-4);
 #else
-    fl_rect(x()+(h()-7)/2,y()+3,2,h()-6);
+    fl_rect(x+(h()-7)/2,y+3,2,h()-6);
 #endif
     return;
   case 'w':
-    fl_rect(x()+2,y()+(h()-7)/2,w()-4,7);
+    fl_rect(x+2,y+(h()-7)/2,w()-4,7);
     return;
   case 'h':
-    fl_rect(x()+(h()-7)/2,y()+2,7,h()-4);
+    fl_rect(x+(h()-7)/2,y+2,7,h()-4);
     return;
   case 'X':
 #if CLOSE_X
-    fl_line(x()+2,y()+3,x()+w()-5,y()+h()-4);
-    fl_line(x()+3,y()+3,x()+w()-4,y()+h()-4);
-    fl_line(x()+2,y()+h()-4,x()+w()-5,y()+3);
-    fl_line(x()+3,y()+h()-4,x()+w()-4,y()+3);
+    fl_line(x+2,y+3,x+w()-5,y+h()-4);
+    fl_line(x+3,y+3,x+w()-4,y+h()-4);
+    fl_line(x+2,y+h()-4,x+w()-5,y+3);
+    fl_line(x+3,y+h()-4,x+w()-4,y+3);
 #endif
 #if CLOSE_HITTITE_LIGHTNING
-    fl_arc(x()+3,y()+3,w()-6,h()-6,0,360);
-    fl_line(x()+7,y()+3, x()+7,y()+11);
+    fl_arc(x+3,y+3,w()-6,h()-6,0,360);
+    fl_line(x+7,y+3, x+7,y+11);
 #endif
     return;
   case 'i':
 #if ICONIZE_BOX
-    fl_rect(x()+w()/2-1,y()+h()/2-1,3,3);
+    fl_rect(x+w()/2-1,y+h()/2-1,3,3);
 #endif
     return;
   }
@@ -1324,7 +1461,11 @@ void Frame::set_cursor(int r) {
   if (this != previous_frame || c != previous_cursor) {
     previous_frame = this;
     previous_cursor = c;
+#if FL_MAJOR_VERSION>1
+    cursor(c);
+#else
     cursor(c, CURSOR_FG_SLOT, CURSOR_BG_SLOT);
+#endif
   }
 }
 
@@ -1577,9 +1718,10 @@ int Frame::handle(const XEvent* ei) {
 
   case UnmapNotify: {
     const XUnmapEvent* e = &(ei->xunmap);
-    if (e->from_configure);
-    else if (state_flags_&IGNORE_UNMAP) clear_state_flag(IGNORE_UNMAP);
-    else state(UNMAPPED);
+    if (e->window == window_ && !e->from_configure) {
+      if (state_flags_&IGNORE_UNMAP) clear_state_flag(IGNORE_UNMAP);
+      else state(UNMAPPED);
+    }
     return 1;}
 
   case DestroyNotify: {
@@ -1676,7 +1818,7 @@ void* Frame::getProperty(Atom a, Atom type, int* np) const {
   return ::getProperty(window_, a, type, np);
 }
 
-void* getProperty(Window w, Atom a, Atom type, int* np) {
+void* getProperty(XWindow w, Atom a, Atom type, int* np) {
   Atom realType;
   int format;
   unsigned long n, extra;
@@ -1696,7 +1838,7 @@ int Frame::getIntProperty(Atom a, Atom type, int deflt) const {
   return ::getIntProperty(window_, a, type, deflt);
 }
 
-int getIntProperty(Window w, Atom a, Atom type, int deflt) {
+int getIntProperty(XWindow w, Atom a, Atom type, int deflt) {
   void* prop = getProperty(w, a, type);
   if (!prop) return deflt;
   int r = int(*(long*)prop);
@@ -1704,7 +1846,7 @@ int getIntProperty(Window w, Atom a, Atom type, int deflt) {
   return r;
 }
 
-void setProperty(Window w, Atom a, Atom type, int v) {
+void setProperty(XWindow w, Atom a, Atom type, int v) {
   long prop = v;
   XChangeProperty(fl_display, w, a, type, 32, PropModeReplace, (uchar*)&prop,1);
 }

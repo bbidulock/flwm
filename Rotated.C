@@ -27,6 +27,9 @@
 /* ********************************************************************** */
 
 #include <FL/x.H>
+#if FL_MAJOR_VERSION < 2
+# define XWindow Window
+#endif
 #include <FL/fl_draw.H>
 #include "Rotated.H"
 #include <stdlib.h>
@@ -67,7 +70,7 @@ XRotLoadFont(Display *dpy, XFontStruct* fontstruct, int dir)
   char val;
   XImage *I1, *I2;
   Pixmap canvas;
-  Window root;
+  XWindow root;
   int screen;
   GC font_gc;
   char text[3];/*, errstr[300];*/
@@ -235,9 +238,9 @@ XRotLoadFont(Display *dpy, XFontStruct* fontstruct, int dir)
   }
   
   for (ichar = 0; ichar < min_char; ichar++)
-    rotfont->per_char[ichar] = rotfont->per_char['?'];
+    rotfont->per_char[ichar] = rotfont->per_char[int('?')];
   for (ichar = max_char+1; ichar < 256; ichar++)
-    rotfont->per_char[ichar] = rotfont->per_char['?'];
+    rotfont->per_char[ichar] = rotfont->per_char[int('?')];
 
   /* free pixmap and GC ... */
   XFreePixmap(dpy, canvas);
@@ -351,23 +354,25 @@ static int XRotTextWidth(XRotFontStruct *rotfont, const char *str, int len)
 
 static XRotFontStruct* font;
 
-void draw_rotated(const char* text, int n, int x, int y, int angle) {
-  if (!text || !*text) return;
+static void setrotfont(int angle) {
   /* make angle positive ... */
   if (angle < 0) do angle += 360; while (angle < 0);
   /* get nearest vertical or horizontal direction ... */
   int dir = ((angle+45)/90)%4;
-
-  if (font && font->xfontstruct == fl_xfont && font->dir == dir) {
-    ;
-  } else {
-    if (font) XRotUnloadFont(fl_display, font);
-    font = XRotLoadFont(fl_display, fl_xfont, dir);
+  if (font) {
+    if (font->xfontstruct == fl_xfont && font->dir == dir) return;
+    XRotUnloadFont(fl_display, font);
   }
+  font = XRotLoadFont(fl_display, fl_xfont, dir);
+}
+
+void draw_rotated(const char* text, int n, int x, int y, int angle) {
+  if (!text || !*text) return;
+  setrotfont(angle);
   XRotDrawString(fl_display, font, fl_window, fl_gc, x, y, text, n);
 }
 
-#ifndef FLWM
+#if !defined(FLWM) || FL_MAJOR_VERSION>=2
 void draw_rotated(const char* text, int x, int y, int angle) {
   if (!text || !*text) return;
   draw_rotated(text, strlen(text), x, y, angle);
@@ -384,12 +389,20 @@ void draw_rotated90(
   if (!str || !*str) return;
   if (w && h && !fl_not_clipped(x, y, w, h)) return;
   if (align & FL_ALIGN_CLIP) fl_clip(x, y, w, h);
+#if FL_MAJOR_VERSION>1
+  setrotfont(90);
+  int a = font->xfontstruct->ascent;
+  int d = font->xfontstruct->descent;
+  XRotDrawString(fl_display, font, fl_window, fl_gc,
+		 x+(w+a-d+1)/2, y+h, str, strlen(str));
+#else
   int a1 = align&(-16);
   if (align & FL_ALIGN_LEFT) a1 |= FL_ALIGN_TOP;
   if (align & FL_ALIGN_RIGHT) a1 |= FL_ALIGN_BOTTOM;
   if (align & FL_ALIGN_TOP) a1 |= FL_ALIGN_RIGHT;
   if (align & FL_ALIGN_BOTTOM) a1 |= FL_ALIGN_LEFT;
   fl_draw(str, -(y+h), x, h, w, (Fl_Align)a1, draw_rot90);
+#endif
   if (align & FL_ALIGN_CLIP) fl_pop_clip();
 }
 
