@@ -13,7 +13,7 @@ MANPAGE = 1
 
 OBJECTS = $(CXXFILES:.C=.o)
 
-all:	$(PROGRAM)
+all:	makeinclude $(PROGRAM)
 
 $(PROGRAM) : $(OBJECTS)
 	$(CXX) $(LDFLAGS) -o $(PROGRAM) $(OBJECTS) $(LIBS) $(LDLIBS)
