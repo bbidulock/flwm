@@ -1565,7 +1565,8 @@ int Frame::handle(const XEvent* ei) {
     if (W > max_w+dwidth) max_w = 0;
     if (H > max_h+dheight) max_h = 0;
     set_size(X, Y, W, H, 2);
-    if (e->value_mask & CWStackMode && e->detail == Above) raise();
+    if (e->value_mask & CWStackMode && e->detail == Above && state()==NORMAL)
+      raise();
     return 1;}
 
   case MapRequest: {
