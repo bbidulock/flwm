@@ -1,0 +1,65 @@
+#! /usr/bin/tcl
+
+# flwm_wmconfig reads the RedHat "/etc/X11/wmconfig" directory (and
+# the ~/.wmconfig directory) and builds a ~/.wmx directory from it so
+# that you have a big complex menu in flwm!
+
+set count 0
+
+proc read_wmfile {fname} {
+    global count
+    global env
+    if [catch {set f [open $fname]} message] {
+	puts $message
+    } else {
+	set group ""
+	set name ""
+	set exec ""
+	while {[gets $f list]>=0} {
+	    if [llength $list]<3 continue
+	    set tag [lindex $list 1]
+	    set value [lrange $list 2 1000]
+	    if [llength $value]==1 {set value [lindex $value 0]}
+	    if {$tag=="group"} {set group $value}
+	    if {$tag=="name"} {set name $value}
+	    if {$tag=="exec"} {set exec $value}
+	}
+	close $f
+	if {$group=="" || $name == "" || $exec == ""} {
+	    puts "$fname is missing necessary data"
+	    return
+	}
+	set dir $env(HOME)/.wmx/$group
+	set exec [string trimright $exec "& "]
+	catch {mkdir [list $dir]}
+	if [llength $exec]==1 {
+	    if [catch {set command [exec which $exec]}] {
+		puts "$fname : can't find the program $exec"
+		return
+	    } else {
+		catch {unlink [list $dir/$name]}
+		link -sym $command $dir/$name
+	    }
+	} else {
+	    set f [open $dir/$name "w"]
+	    puts $f "#! /bin/sh"
+	    puts $f "exec $exec"
+	    close $f
+	    chmod +x [list $dir/$name]
+	}
+	incr count
+    }
+}
+
+if ![catch {set l [glob /etc/X11/wmconfig/*]}] {
+   foreach f $l {read_wmfile $f}
+}
+
+if ![catch {set l [glob $env(HOME)/.wmconfig/*]}] {
+   foreach f $l {read_wmfile $f}
+}
+
+if !$count {
+   error "No files found in /etc/X11/wmconfig or ~/.wmconfig"
+}
+
