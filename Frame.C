@@ -79,6 +79,9 @@ Frame::Frame(XWindow window, XWindowAttributes* existing) :
   max_w_button(BUTTON_LEFT,BUTTON_TOP+BUTTON_H,BUTTON_W,BUTTON_H,"w"),
   min_w_button(BUTTON_LEFT,BUTTON_TOP+2*BUTTON_H,BUTTON_W,BUTTON_H,"W")
 {
+#if FL_MAJOR_VERSION > 1
+  clear_double_buffer();
+#endif
   close_button.callback(button_cb_static);
   iconize_button.callback(button_cb_static);
   max_h_button.type(FL_TOGGLE_BUTTON);
@@ -1023,8 +1026,8 @@ void Frame::set_size(int nx, int ny, int nw, int nh, int warp) {
     int minh = (nh < h()) ? nh : h();
     XClearArea(fl_display, fl_xid(this), 0, minh-BOTTOM, w(), BOTTOM, 1);
     // see if label or close box moved, erase the minimum area:
-    int old_label_y = label_y;
-    int old_label_h = label_h;
+//     int old_label_y = label_y;
+//     int old_label_h = label_h;
     h(nh); show_hide_buttons();
 #if 1 //def SHOW_CLOCK
     int t = label_y + 3; // we have to clear the entire label area
@@ -1247,7 +1250,8 @@ void Frame::draw() {
 #else
 # if FL_MAJOR_VERSION>1
     static fltk::FrameBox framebox(0,"AAAAJJWWNNTT");
-    framebox.draw(0,0,w(),h(),style(),fltk::INVISIBLE); // INVISIBLE = draw edge only
+    drawstyle(style(),fltk::INVISIBLE); // INVISIBLE = draw edge only
+    framebox.draw(Rectangle(w(),h()));
 # else
     fl_frame("AAAAWWJJTTNN",0,0,w(),h());
 # endif
@@ -1297,10 +1301,10 @@ void Frame::redraw_clock() {
 
 void FrameButton::draw() {
 #if FL_MAJOR_VERSION>1
-  const int x = 0;
-  const int y = 0;
-  FL_UP_BOX->draw(0,0,w(),h(),style(),
-		  value() ? (fltk::INVISIBLE|fltk::VALUE) : fltk::INVISIBLE);
+  const int x = value()?1:0;
+  const int y = x;
+  drawstyle(style(),flags()|fltk::OUTPUT);
+  FL_UP_BOX->draw(Rectangle(w(),h()));
 #else
   const int x = this->x();
   const int y = this->y();
@@ -1456,17 +1460,17 @@ void Frame::set_cursor(int r) {
     c = FL_CURSOR_NESW;
     break;
   }
+#if FL_MAJOR_VERSION>1
+  cursor(c);
+#else
   static Frame* previous_frame;
   static Fl_Cursor previous_cursor;
   if (this != previous_frame || c != previous_cursor) {
     previous_frame = this;
     previous_cursor = c;
-#if FL_MAJOR_VERSION>1
-    cursor(c);
-#else
     cursor(c, CURSOR_FG_SLOT, CURSOR_BG_SLOT);
-#endif
   }
+#endif
 }
 
 #ifdef AUTO_RAISE
@@ -1488,10 +1492,17 @@ static Frame* cursor_inside = 0;
 int Frame::handle(int e) {
   static int what, dx, dy, ix, iy, iw, ih;
   // see if child widget handles event:
-  if (Fl_Window::handle(e) && e != FL_ENTER && e != FL_MOVE) {
+#if FL_MAJOR_VERSION > 1
+  if (fltk::Group::handle(e) && e != FL_ENTER && e != FL_MOVE) {
     if (e == FL_PUSH) set_cursor(-1);
     return 1;
   }
+#else
+  if (Fl_Group::handle(e) && e != FL_ENTER && e != FL_MOVE) {
+    if (e == FL_PUSH) set_cursor(-1);
+    return 1;
+  }
+#endif
   switch (e) {
 
   case FL_SHOW:
@@ -1521,42 +1532,33 @@ int Frame::handle(int e) {
 #endif
     goto GET_CROSSINGS;
 
-  case 0:
+  case FL_MOVE:
   GET_CROSSINGS:
     // set cursor_inside to true when the mouse is inside a window
     // set it false when mouse is on a frame or outside a window.
     // fltk mangles the X enter/leave events, we need the original ones:
 
     switch (fl_xevent->type) {
-    case EnterNotify:
-
-      // see if cursor skipped over frame and directly to interior:
-      if (fl_xevent->xcrossing.detail == NotifyVirtual ||
-	  fl_xevent->xcrossing.detail == NotifyNonlinearVirtual)
-	cursor_inside = this;
-
-      else {
-	// cursor is now pointing at frame:
-	cursor_inside = 0;
-      }
-
-      // fall through to FL_MOVE:
-      break;
-
     case LeaveNotify:
       if (fl_xevent->xcrossing.detail == NotifyInferior) {
 	// cursor moved from frame to interior
 	cursor_inside = this;
-	set_cursor(-1);
+	break;
+      } else {
+	// cursor moved to another window
 	return 1;
       }
-      return 1;
 
-    default:
-      return 0; // other X event we don't understand
+    case EnterNotify:
+      // see if cursor skipped over frame and directly to interior:
+      if (fl_xevent->xcrossing.detail == NotifyVirtual ||
+	  fl_xevent->xcrossing.detail == NotifyNonlinearVirtual)
+	cursor_inside = this;
+      else {
+	// cursor is now pointing at frame:
+	cursor_inside = 0;
+      }
     }
-
-  case FL_MOVE:
     if (Fl::belowmouse() != this || cursor_inside == this)
       set_cursor(-1);
     else

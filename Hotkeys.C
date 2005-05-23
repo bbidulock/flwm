@@ -150,6 +150,7 @@ static struct {int key; void (*func)();} keybindings[] = {
   {0}};
 
 int Handle_Hotkey() {
+#if 0
   for (int i = 0; keybindings[i].key; i++) {
     if (Fl::test_shortcut(keybindings[i].key) ||
 	(keybindings[i].key & 0xFFFF) == FL_Delete
@@ -159,6 +160,7 @@ int Handle_Hotkey() {
       return 1;
     }
   }
+#endif
   return 0;
 }
 

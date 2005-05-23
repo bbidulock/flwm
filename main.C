@@ -43,10 +43,11 @@ static int xerror_handler(Display* d, XErrorEvent* e) {
 class Fl_Root : public Fl_Window {
   int handle(int);
 public:
-  Fl_Root() : Fl_Window(0,0,Fl::w(),Fl::h()) {}
+  Fl_Root() : Fl_Window(0,0,Fl::w(),Fl::h()) {clear_double_buffer();}
   void show() {
     if (!shown()) Fl_X::set_xid(this, RootWindow(fl_display, fl_screen));
   }
+  void flush() {}
 };
 Fl_Window *Root;
 
