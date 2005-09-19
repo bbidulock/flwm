@@ -238,6 +238,7 @@ static void initialize() {
 #else
   Root->cursor((Fl_Cursor)cursor, CURSOR_FG_SLOT, CURSOR_BG_SLOT);
 #endif
+  Fl::visible_focus(0);
 
 #ifdef TITLE_FONT
   Fl::set_font(TITLE_FONT_SLOT, TITLE_FONT);
@@ -369,7 +370,7 @@ static void color_setup(Fl_Color slot, const char* arg, ulong value) {
 #endif
 
 int main(int argc, char** argv) {
-  program_name = filename_name(argv[0]);
+  program_name = fl_filename_name(argv[0]);
   int i; if (Fl::args(argc, argv, i, arg) < argc) Fl::error(
 "options are:\n"
 " -d[isplay] host:#.#\tX display & screen to use\n"
