@@ -121,18 +121,19 @@ XRotLoadFont(Display *dpy, XFontStruct* fontstruct, int dir)
     for (ichar = min_char; ichar <= max_char; ichar++) {
 
       index = ichar-fontstruct->min_char_or_byte2;
- 
+
+      XCharStruct* charstruct;
+      if (fontstruct->per_char)
+	charstruct = fontstruct->per_char+index;
+      else
+	charstruct = &fontstruct->min_bounds;
+
       /* per char dimensions ... */
-      ascent =   rotfont->per_char[ichar].ascent = 
-	fontstruct->per_char[index].ascent;
-      descent =  rotfont->per_char[ichar].descent = 
-	fontstruct->per_char[index].descent;
-      lbearing = rotfont->per_char[ichar].lbearing = 
-	fontstruct->per_char[index].lbearing;
-      rbearing = rotfont->per_char[ichar].rbearing = 
-	fontstruct->per_char[index].rbearing;
-      rotfont->per_char[ichar].width = 
-	fontstruct->per_char[index].width;
+      ascent =   rotfont->per_char[ichar].ascent   = charstruct->ascent;
+      descent =  rotfont->per_char[ichar].descent  = charstruct->descent;
+      lbearing = rotfont->per_char[ichar].lbearing = charstruct->lbearing;
+      rbearing = rotfont->per_char[ichar].rbearing = charstruct->rbearing;
+                 rotfont->per_char[ichar].width    = charstruct->width;
 
       /* some space chars have zero body, but a bitmap can't have ... */
       if (!ascent && !descent)   
