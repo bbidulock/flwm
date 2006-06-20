@@ -1825,15 +1825,15 @@ void* getProperty(XWindow w, Atom a, Atom type, int* np) {
   int format;
   unsigned long n, extra;
   int status;
-  void* prop;
+  uchar* prop;
   status = XGetWindowProperty(fl_display, w,
 			      a, 0L, 256L, False, type, &realType,
-			      &format, &n, &extra, (uchar**)&prop);
+			      &format, &n, &extra, &prop);
   if (status != Success) return 0;
   if (!prop) return 0;
   if (!n) {XFree(prop); return 0;}
   if (np) *np = (int)n;
-  return prop;
+  return (void*)prop;
 }
 
 int Frame::getIntProperty(Atom a, Atom type, int deflt) const {

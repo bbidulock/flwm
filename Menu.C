@@ -250,8 +250,8 @@ spawn_cb(Fl_Widget*, void*n)
   if (fork() == 0) {
     if (fork() == 0) {
       close(ConnectionNumber(fl_display));
-      if (name == xtermname) execlp(name, name, "-ut", 0);
-      else execl(name, name, 0);
+      if (name == xtermname) execlp(name, name, "-ut", (void*)0);
+      else execl(name, name, (void*)0);
       fprintf(stderr, "flwm: can't run %s, %s\n", name, strerror(errno));
       XBell(fl_display, 70);
       exit(1);
