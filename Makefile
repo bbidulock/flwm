@@ -5,7 +5,7 @@ VERSION = 1.00
 
 CXXFILES = main.C Frame.C Rotated.C Menu.C FrameWindow.C Desktop.C Hotkeys.C
 
-LIBS = -lfltk
+LIBS =
 
 MANPAGE = 1
 
