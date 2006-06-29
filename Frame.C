@@ -92,6 +92,7 @@ Frame::Frame(XWindow window, XWindowAttributes* existing) :
   min_w_button.callback(button_cb_static);
   end();
   box(FL_NO_BOX); // relies on background color erasing interior
+  labelcolor(FL_FOREGROUND_COLOR);
   next = first;
   first = this;
 
@@ -795,7 +796,7 @@ int Frame::activate(int warp) {
     XSetWindowAttributes a;
     a.background_pixel = fl_xpixel(FL_SELECTION_COLOR);
     XChangeWindowAttributes(fl_display, fl_xid(this), CWBackPixel, &a);
-    labelcolor(contrast(FL_BLACK, FL_SELECTION_COLOR));
+    labelcolor(contrast(FL_FOREGROUND_COLOR, FL_SELECTION_COLOR));
     XClearArea(fl_display, fl_xid(this), 2, 2, w()-4, h()-4, 1);
 #else
 #ifdef SHOW_CLOCK
@@ -815,7 +816,7 @@ void Frame::deactivate() {
     XSetWindowAttributes a;
     a.background_pixel = fl_xpixel(FL_GRAY);
     XChangeWindowAttributes(fl_display, fl_xid(this), CWBackPixel, &a);
-    labelcolor(FL_BLACK);
+    labelcolor(FL_FOREGROUND_COLOR);
     XClearArea(fl_display, fl_xid(this), 2, 2, w()-4, h()-4, 1);
 #else
 #ifdef SHOW_CLOCK
@@ -1197,7 +1198,11 @@ void Frame::show_hide_buttons() {
 // make sure fltk does not try to set the window size:
 void Frame::resize(int, int, int, int) {}
 // For fltk2.0:
-void Frame::layout() {layout_damage(0);}
+void Frame::layout() {
+#if FL_MAJOR_VERSION>1 
+  layout_damage(0); // actually this line is not needed in newest cvs fltk2.0
+#endif
+}
 
 ////////////////////////////////////////////////////////////////
 

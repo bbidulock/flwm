@@ -43,7 +43,11 @@ static int xerror_handler(Display* d, XErrorEvent* e) {
 class Fl_Root : public Fl_Window {
   int handle(int);
 public:
-  Fl_Root() : Fl_Window(0,0,Fl::w(),Fl::h()) {clear_double_buffer();}
+  Fl_Root() : Fl_Window(0,0,Fl::w(),Fl::h()) {
+#if FL_MAJOR_VERSION > 1
+    clear_double_buffer();
+#endif
+  }
   void show() {
     if (!shown()) Fl_X::set_xid(this, RootWindow(fl_display, fl_screen));
   }
@@ -108,22 +112,31 @@ static int flwm_event_handler(int e) {
       const XMapRequestEvent* e = &(fl_xevent->xmaprequest);
       (void)new Frame(e->window);
       return 1;}
-    case KeyRelease: {
+#if FL_MAJOR_VERSION<2
+    // this was needed for *some* earlier versions of fltk
+    case KeyRelease:
       if (!Fl::grab()) return 0;
-      // see if they released the alt key:
-      unsigned long keysym =
+      Fl::e_keysym =
 	XKeycodeToKeysym(fl_display, fl_xevent->xkey.keycode, 0);
-      if (keysym == FL_Alt_L || keysym == FL_Alt_R) {
-	Fl::e_keysym = FL_Enter;
-#if FL_MAJOR_VERSION>1
-	return Fl::modal()->handle(FL_KEYBOARD);
-#else
-	return Fl::grab()->handle(FL_KEYBOARD);
+      goto KEYUP;
 #endif
-      }
-      return 0;}
     }
-  } else if (e == FL_SHORTCUT) {
+  } else if (e == FL_KEYUP) {
+#if FL_MAJOR_VERSION<2
+  KEYUP:
+#endif
+    if (!Fl::grab()) return 0;
+    // when alt key released, pretend they hit enter & pick menu item
+    if (Fl::event_key()==FL_Alt_L || Fl::event_key()==FL_Alt_R) {
+      Fl::e_keysym = FL_Enter;
+#if FL_MAJOR_VERSION>1
+      return Fl::modal()->handle(FL_KEYBOARD);
+#else
+      return Fl::grab()->handle(FL_KEYBOARD);
+#endif
+    }
+    return 0;
+  } else if (e == FL_SHORTCUT || e == FL_KEYBOARD) {
 #if FL_MAJOR_VERSION == 1 && FL_MINOR_VERSION == 0 && FL_PATCH_VERSION < 3
     // make the tab keys work in the menus in older fltk's:
     // (they do not cycle around however, so a new fltk is a good idea)

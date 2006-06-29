@@ -82,7 +82,7 @@ frame_label_draw(const Fl_Label* o, int X, int Y, int W, int H, Fl_Align align)
       if (h < 3) h = 3;
       if (y+h > SCREEN_H) y = SCREEN_H-h;
       if (y < 0) y = 0;
-      fl_color(FL_BLACK);
+      fl_color(FL_FOREGROUND_COLOR);
       if (c->state() == ICONIC)
 	fl_rect(X+x+SCREEN_DX, Y+y+SCREEN_DX, w, h);
       else
@@ -92,6 +92,17 @@ frame_label_draw(const Fl_Label* o, int X, int Y, int W, int H, Fl_Align align)
   fl_font(o->font, o->size);
   fl_color((Fl_Color)o->color);
   const char* l = f->label(); if (!l) l = "unnamed";
+  // double any ampersands to turn off the underscores:
+  char buf[256];
+  if (strchr(l,'&')) {
+    char* t = buf;
+    while (t < buf+254 && *l) {
+      if (*l=='&') *t++ = *l;
+      *t++ = *l;
+    }
+    *t = 0;
+    l = buf;
+  }
   fl_draw(l, X+MENU_ICON_W+3, Y, W-MENU_ICON_W-3, H, align);
 }
 
@@ -282,12 +293,16 @@ init(Fl_Menu_Item& m, const char* data)
   m.style = 0;
 #endif
   m.label(data);
+#if FL_MAJOR_VERSION > 2
+  m.flags = fltk::RAW_LABEL;
+#else
   m.flags = 0;
+#endif
   m.labeltype(FL_NORMAL_LABEL);
   m.shortcut(0);
   m.labelfont(MENU_FONT_SLOT);
   m.labelsize(MENU_FONT_SIZE);
-  m.labelcolor(FL_BLACK);
+  m.labelcolor(FL_FOREGROUND_COLOR);
 }
 
 #if WMX_MENU_ITEMS
@@ -603,7 +618,7 @@ ShowTabMenu(int tab)
 	if (!level)
 	  menu[n].labeltype(TEXT_LABEL);
 #endif
-      int	nextlev = (i==num_wmx-1)?0:strspn(wmxlist[i+1], "/")-1;
+      int nextlev = (i==num_wmx-1)?0:strspn(wmxlist[i+1], "/")-1;
       if (nextlev < level) {
 	menu[n].callback(spawn_cb, cmd);
 	// Close 'em off
