@@ -98,7 +98,7 @@ frame_label_draw(const Fl_Label* o, int X, int Y, int W, int H, Fl_Align align)
     char* t = buf;
     while (t < buf+254 && *l) {
       if (*l=='&') *t++ = *l;
-      *t++ = *l;
+      *t++ = *l++;
     }
     *t = 0;
     l = buf;
