@@ -1253,13 +1253,7 @@ void Frame::draw() {
       fl_xyline(2, h()-3, w()-3, 2);
     }
 #else
-# if FL_MAJOR_VERSION>1
-    static fltk::FrameBox framebox(0,"AAAAJJWWNNTT");
-    drawstyle(style(),fltk::INVISIBLE); // INVISIBLE = draw edge only
-    framebox.draw(Rectangle(w(),h()));
-# else
     fl_frame("AAAAWWJJTTNN",0,0,w(),h());
-# endif
 #endif
     if (!flag(THIN_BORDER) && label_h > 3) {
 #ifdef SHOW_CLOCK

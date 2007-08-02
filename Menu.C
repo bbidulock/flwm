@@ -329,7 +329,7 @@ scan_wmx_dir (char *path, int bufindex, int nest)
   if (dir) {
     struct dirent* ent;
     while ((ent=readdir(dir))) {
-    if (ent->d_name[0] == '.')
+      if (ent->d_name[0] == '.')
         continue;
       strcpy(path+pathlen, ent->d_name);
       if (stat(path, &st) < 0) continue;

@@ -16,11 +16,9 @@ MAKEDEPEND =@MAKEDEPEND@
 
 # flags for C++ compiler:
 CFLAGS		=@CFLAGS@
-CFLAGS_D	=@CFLAGS_D@
 CXXFLAGS	=@CXXFLAGS@
-CXXFLAGS_D	=@CXXFLAGS_D@
 
 # libraries to link with:
-LDLIBS	=@LIBS@ -lX11 -lXext @X_EXTRA_LIBS@ -lm
+LIBS	=@LIBS@ -lX11 -lXext @X_EXTRA_LIBS@ -lm
 
 INSTALL	=@INSTALL@
