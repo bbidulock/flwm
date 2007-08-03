@@ -307,13 +307,11 @@ init(Fl_Menu_Item& m, const char* data)
 
 #if WMX_MENU_ITEMS
 
-// wmxlist is an array of char* pointers (for efficient sorting purposes), 
-// which are stored in wmxbuffer (for memory efficiency and to avoid
-// freeing and fragmentation)
-static char** wmxlist = NULL;
-static int wmxlistsize = 0;
 // wmx commands are read from ~/.wmx,
-// they are stored null-separated here:
+// and stored null-separated here by scan_wmx_dir:
+// The strings are kept in this single buffer for memory efficiency and
+// to avoid freeing and fragmentation as the scan is done many times:
+// Each string has a leading character for the nesting level.
 static char* wmxbuffer = NULL;
 static int wmxbufsize = 0;
 static int num_wmx = 0;
@@ -334,22 +332,30 @@ scan_wmx_dir (char *path, int bufindex, int nest)
       strcpy(path+pathlen, ent->d_name);
       if (stat(path, &st) < 0) continue;
       int len = pathlen+strlen(ent->d_name);
-	// worst-case alloc needs
-      if (bufindex+len+nest+1 > wmxbufsize)
-	wmxbuffer = (char*)realloc(wmxbuffer, (wmxbufsize+=1024));
-      for (int i=0; i<nest; i++)
-	wmxbuffer[bufindex++] = '/'; // extra slash marks menu titles
-      if (S_ISDIR(st.st_mode) && (st.st_mode & 0555) && nest<MAX_NESTING_DEPTH){
-	strcpy(wmxbuffer+bufindex, path);
-        bufindex += len+1;
-        strcat(path, "/");
+      while (bufindex+len+2 > wmxbufsize) { // worst-case alloc needs
+	wmxbufsize = wmxbufsize ? 2*wmxbufsize : 1024;
+	wmxbuffer = (char*)realloc(wmxbuffer, wmxbufsize);
+      }
+      int start = bufindex; // remember where it started so we can delete it
+      wmxbuffer[bufindex++] = nest; // remember nesting level
+      strcpy(wmxbuffer+bufindex, path);
+      bufindex += len+1;
+      num_wmx++;
+      if (S_ISDIR(st.st_mode) && (st.st_mode & 0555) && nest<MAX_NESTING_DEPTH) {
+	strcpy(path+len, "/");
+	int oldcount = num_wmx;
         bufindex = scan_wmx_dir (path, bufindex, nest+1);
-	num_wmx++;
+	if (num_wmx == oldcount) {
+	  // ignore empty directories
+	  bufindex = start;
+	  num_wmx--;
+	}
       } else if (S_ISREG(st.st_mode) && (st.st_mode & 0111)) {
 	// make sure it exists and is an executable file:
-	strcpy(wmxbuffer+bufindex, path);
-	bufindex += len+1;
-	num_wmx++;
+      } else {
+	// ignore other files
+	bufindex = start;
+	num_wmx--;
       }
     }
     closedir(dir);
@@ -357,14 +363,17 @@ scan_wmx_dir (char *path, int bufindex, int nest)
   return bufindex;
 }
 
+// They are then split into this array of char* pointers for sorting:
+static char** wmxlist = NULL;
+static int wmxlistsize = 0;
+
 // comparison for qsort
 //	We keep submenus together by noting that they're proper superstrings
 static int
 wmxCompare(const void *A, const void *B)
 {
-  char	*pA, *pB;
-  pA = *(char **)A;
-  pB = *(char **)B;
+  char* pA = *(char **)A+1; // skip leading nesting level indicator
+  char* pB = *(char **)B+1;
 
   pA += strspn(pA, "/");
   pB += strspn(pB, "/");
@@ -385,7 +394,7 @@ wmxCompare(const void *A, const void *B)
   return(0);
 }
 
-static void
+void
 load_wmx()
 {
   const char* home=getenv("HOME"); if (!home) home = ".";
@@ -409,10 +418,9 @@ load_wmx()
   }
   for (int i=0; i<num_wmx; i++) {
     char* cmd = wmxbuffer;
-
     for (int j = 0; j < num_wmx; j++) {
       wmxlist[j] = cmd;
-      cmd += strlen(cmd)+1;
+      cmd += strlen(cmd+1)+2;
     }
   }
 
@@ -463,10 +471,10 @@ ShowTabMenu(int tab)
   load_wmx();
   if (num_wmx) {
     n -= 1; // delete "new xterm"
-    // add wmx items
+    // count the wmx items, plus an extra for submenu terminators:
     int	level = 0;
     for (int i=0; i<num_wmx; i++) {
-      int nextlev = (i==num_wmx-1)?0:strspn(wmxlist[i+1], "/")-1;
+      int nextlev = (i==num_wmx-1) ? 0 : wmxlist[i+1][0];
       if (nextlev < level) {
 	n += level-nextlev;
 	level = nextlev;
@@ -608,9 +616,9 @@ ShowTabMenu(int tab)
     int level = 0;
     pathlen[0] = wmx_pathlen;
     for (int i = 0; i < num_wmx; i++) {
-      cmd = wmxlist[i];
-      cmd += strspn(cmd, "/")-1;
+      cmd = wmxlist[i]+1; // skip level number
       init(menu[n], cmd+pathlen[level]);
+      menu[n].callback(spawn_cb, cmd);
 #if FL_MAJOR_VERSION < 2
 #if DESKTOPS
       if (one_desktop)
@@ -618,10 +626,9 @@ ShowTabMenu(int tab)
 	if (!level)
 	  menu[n].labeltype(TEXT_LABEL);
 #endif
-      int nextlev = (i==num_wmx-1)?0:strspn(wmxlist[i+1], "/")-1;
+      int nextlev = (i==num_wmx-1) ? 0 : wmxlist[i+1][0];
       if (nextlev < level) {
-	menu[n].callback(spawn_cb, cmd);
-	// Close 'em off
+	// add null terminators to turn off levels
 	for (; level>nextlev; level--)
 	  init(menu[++n], 0);
       } else if (nextlev > level) {
@@ -629,8 +636,6 @@ ShowTabMenu(int tab)
 	pathlen[++level] = strlen(cmd)+1; // extra for next trailing /
 	menu[n].flags = FL_SUBMENU;
 	menu[n].callback((Fl_Callback*)0);
-      } else {
-	menu[n].callback(spawn_cb, cmd);
       }
       n++;
     }
