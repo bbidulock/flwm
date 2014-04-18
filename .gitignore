@@ -1,0 +1,9 @@
+compileit
+config.cache
+config.log
+config.status
+configure
+geany_run_script.sh
+logo.fl
+makedepend
+makeinclude

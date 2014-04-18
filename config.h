@@ -2,13 +2,23 @@
 // You can edit these symbols to change the behavior & appearance of flwm.
 // Turning off features will make flwm smaller too!
 
-////////////////////////////////////////////////////////////////
+//ML Start---
+
+// ML: My hotkeys (comment out to disable):
+//	 CTRL+ALT+arrow keys: move window that direction 4 or more pixels
+#define ML_HOTKEYS 1
+
+// ML: Use environment variable to set titlebar color:
+#define ML_TITLEBAR_COLOR 1
+
+//-- End ML
+
 // BEHAVIOR:
 
 // Turn this on for click-to-type (rather than point-to-type).
 // On: clicking on the window gives it focus
 // Off: pointing at the window gives it the focus.
-#define CLICK_TO_TYPE 0
+#define CLICK_TO_TYPE 1
 
 // Most window managers consider this and click-to-type equivalent.
 // On: clicking anywhere on window raises it
@@ -19,11 +29,11 @@
 // until you move the cursor to another window that wants focus.
 // If this is off you lose focus as soon as the cursor goes outside
 // the window (such as to the desktop):
-#define STICKY_FOCUS 1
+// #define STICKY_FOCUS 1
 
 // For point-to-type, after this many seconds the window is raised,
 // nothing is done if this is not defined:
-//#define AUTO_RAISE 0.5
+// #define AUTO_RAISE 0.5
 
 // Perform "smart" autoplacement.
 // New windows are put at positions where they cover as few existing windows
@@ -37,7 +47,7 @@
 
 // set this to zero for "new desktop" to just create one without asking
 // for a name.  This saves 12K or so of fltk input field code:
-#define ASK_FOR_NEW_DESKTOP_NAME 1
+#define ASK_FOR_NEW_DESKTOP_NAME 0
 
 // wm2 has no close box, for good reasons.  Unfortunately too many programs
 // assume there is one and have no other way to close a window.  For a more
@@ -75,7 +85,7 @@
 #if CLICK_TO_TYPE
 #define ACTIVE_COLOR 0xF0F0F0
 #endif
-//#define ACTIVE_COLOR 0x000080
+//#define ACTIVE_COLOR 0x000008
 
 // thickness of the border edge on each side (includes XBORDER):
 #define LEFT 3
@@ -85,23 +95,35 @@
 
 // font for titles (if not set, helvetica bold is used):
 // If this name is specific enough the font size is ignored.
-//#define TITLE_FONT "-*-helvetica-bold-r-normal--*"
+// #define TITLE_FONT "-*-helvetica-medium-r-normal--*"
 #define TITLE_FONT_SIZE 12
 
-// thickness of title bar (LEFT is added to it):
-#define TITLE_WIDTH (TITLE_FONT_SIZE+3)
+// thickness of title bar (frame border thickness is added to it):
+#define TITLE_WIDTH (TITLE_FONT_SIZE+1)
+#ifdef TOPSIDE
+#define TITLE_HEIGHT TITLE_WIDTH	//ML
+#endif
 
 // size & position of buttons (must fit in title bar):
-#define BUTTON_W TITLE_WIDTH
-#define BUTTON_H BUTTON_W
-#define BUTTON_LEFT LEFT
-#define BUTTON_TOP TOP
-#define BUTTON_BOTTOM BOTTOM
+#ifdef TOPSIDE
+#define BUTTON_W 		TITLE_HEIGHT
+#define BUTTON_H 		BUTTON_W
+#define BUTTON_LEFT 	LEFT
+#define BUTTON_TOP 		TOP
+#define BUTTON_RIGHT 	RIGHT
+#else
+#define BUTTON_W 		TITLE_WIDTH
+#define BUTTON_H 		BUTTON_W
+#define BUTTON_LEFT 	LEFT
+#define BUTTON_TOP 		TOP
+#define BUTTON_BOTTOM 	BOTTOM
+#endif
 
 // how many pixels from edge for resize handle:
 #define RESIZE_EDGE 5
-// set this to zero to disable resizing by grabbing left edge:
-#define RESIZE_LEFT 1
+// set this to zero to disable resizing by grabbing left/top edge:
+//#define RESIZE_LEFT 1
+#define RESIZE_TITLE_EDGE 1		// ML
 
 // must drag window this far off screen to snap the border off the screen:
 #define EDGE_SNAP 50
@@ -111,8 +133,8 @@
 // button decorations:
 #define CLOSE_X 1	// windoze-style X in close button
 #define CLOSE_HITTITE_LIGHTNING 0 // The ancient Hittite symbol for lightning
-#define ICONIZE_BOX 0	// small box in iconize button
-#define MINIMIZE_ARROW 0 // minimize button draws a <- rather than |
+#define ICONIZE_BOX 1	// small box in iconize button
+#define MINIMIZE_ARROW 1 // minimize button draws a <- rather than |
 
 // default colors for cursor:
 #ifdef __sgi
@@ -150,7 +172,7 @@
 #define MENU_ICON_H 15
 
 // font to use in menus (if not set helvetica is used):
-//#define MENU_FONT "-*-helvetica-medium-r-normal--*"
+#define MENU_FONT "-*-helvetica-medium-r-normal--*"
 #define MENU_FONT_SIZE 12
 
 ////////////////////////////////////////////////////////////////

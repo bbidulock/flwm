@@ -11,8 +11,12 @@
 #include "config.h"
 #ifdef SHOW_CLOCK
 #include <time.h>
-#include <signal.h>
+//#include <signal.h>	// ML
 #endif
+
+//ML
+#include <FL/fl_ask.H>
+#include <signal.h>
 
 ////////////////////////////////////////////////////////////////
 
@@ -73,6 +77,9 @@ extern void click_raise(Frame*);
 
 // fltk calls this for any events it does not understand:
 static int flwm_event_handler(int e) {
+  if (Fl::event_key()==FL_Escape) {
+    return 1;
+  }
   if (!e) { // XEvent that fltk did not understand.
     XWindow window = fl_xevent->xany.window;
     // unfortunately most of the redirect events put the interesting
@@ -215,6 +222,14 @@ extern FL_API fltk::Color fl_cursor_bg;
 static int cursor = FL_CURSOR_ARROW;
 #endif
 
+// ML ------------
+extern time_t wmx_time;
+void request_menu_refresh(int signum) {
+	if (signum == SIGUSR2) {
+		wmx_time = 42;	// arbitrary value so it won't match st_mtime fire/dir status field 
+	}
+}
+// -------------ML
 static void initialize() {
 
   Display* d = fl_display;
@@ -297,6 +312,10 @@ static void initialize() {
   sigaction(SIGCONT, &flwm_clock_alarm_stop, NULL);
 #endif
 
+  // ML -----------
+  signal(SIGUSR2, request_menu_refresh);
+
+  // ------------ML
   XSync(d, 0);
   initializing = 0;
 

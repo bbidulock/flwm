@@ -1,9 +1,11 @@
 SHELL=/bin/sh
 
 PROGRAM = flwm
-VERSION = 1.02
+VERSION = 1.14
 
 CXXFILES = main.C Frame.C Rotated.C Menu.C FrameWindow.C Desktop.C Hotkeys.C
+
+LIBS = -lfltk
 
 MANPAGE = 1
 
@@ -14,7 +16,7 @@ OBJECTS = $(CXXFILES:.C=.o)
 all:	makeinclude $(PROGRAM)
 
 $(PROGRAM) : $(OBJECTS)
-	$(CXX) $(LDFLAGS) -o $(PROGRAM) $(OBJECTS) $(LIBS)
+	$(CXX) $(LDFLAGS) -o $(PROGRAM) $(OBJECTS) $(LIBS) $(LDLIBS)
 
 makeinclude: configure
 	./configure
@@ -71,12 +73,12 @@ debug: $(PROGRAM_D)
 OBJECTS_D = $(CXXFILES:.C=.do) $(CFILES:.c=.do)
 
 .C.do :
-	$(CXX) -I.. $(CXXFLAGS) -DDEBUG -c -o $@ $<
+	$(CXX) -I.. $(CXXFLAGS_D) -c -o $@ $<
 .c.do :
-	$(CC) -I.. $(CFLAGS) -DDEBUG -o $@ $<
+	$(CC) -I.. $(CFLAGS_D) -c -o $@ $<
 
 $(PROGRAM_D) : $(OBJECTS_D)
-	$(CXX) $(LDFLAGS) -o $(PROGRAM_D) $(OBJECTS_D) $(LIBS)
+	$(CXX) $(LDFLAGS) -o $(PROGRAM_D) $(OBJECTS_D) $(LIBS) $(LDLIBS)
 
 rotated_test: Rotated.o rotated_test.C
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o rotated_test rotated_test.C Rotated.o $(LIBS) $(LIBS)
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o rotated_test rotated_test.C Rotated.o $(LIBS) $(LDLIBS)

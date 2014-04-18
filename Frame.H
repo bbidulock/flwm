@@ -80,7 +80,7 @@ class Frame : public Fl_Window {
 
   int left, top, dwidth, dheight; // current thickness of border
   int label_y, label_h; // location of label
-  int label_w;		// measured width of printed label
+  int label_w;		    // measured width of printed label
 
   XWindow transient_for_xid; // value from X
   Frame* transient_for_; // the frame for that xid, if found
@@ -124,7 +124,6 @@ class Frame : public Fl_Window {
 
   void installColormap() const;
 
-  void set_size(int,int,int,int, int warp=0);
   void resize(int,int,int,int);
   void layout();
   void show_hide_buttons();
@@ -150,6 +149,8 @@ class Frame : public Fl_Window {
   void warp_pointer();
 
 public:
+
+  void set_size(int,int,int,int, int warp=0);  // ML: made public
 
   int handle(const XEvent*);
 
