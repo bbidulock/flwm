@@ -282,7 +282,7 @@ static void initialize() {
   // First create a window that can be watched to see if wm dies:
   Atom a = XInternAtom(d, "_WIN_SUPPORTING_WM_CHECK", False);
   XWindow win = XCreateSimpleWindow(d, fl_xid(Root), -200, -200, 5, 5, 0, 0, 0);
-  CARD32 val = win;
+  long val = win;
   XChangeProperty(d, fl_xid(Root), a, XA_CARDINAL, 32, PropModeReplace, (uchar*)&val, 1);
   XChangeProperty(d, win, a, XA_CARDINAL, 32, PropModeReplace, (uchar*)&val, 1);
   // Next send a list of Gnome stuff we understand:
