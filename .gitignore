@@ -7,3 +7,4 @@ geany_run_script.sh
 logo.fl
 makedepend
 makeinclude
+cscope.*
