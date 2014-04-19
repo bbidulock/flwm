@@ -2,6 +2,9 @@
 // Some modifications by Michael A. Losh, tagged "ML" below, 
 // Last update: 2009-09-27
 
+#ifndef FL_INTERNALS
+#define FL_INTERNALS
+
 #include "config.h"
 #include "Frame.H"
 #include "Desktop.H"
@@ -11,6 +14,7 @@
 #include <FL/fl_draw.H>
 #include "Rotated.H"
 
+#endif
 
 static Atom wm_state = 0;
 static Atom wm_change_state;

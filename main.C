@@ -2,6 +2,9 @@
 // you can test the window controls.
 //#define TEST 1
 
+#ifndef FL_INTERNALS
+#define FL_INTERNALS
+
 #include "Frame.H"
 #include <X11/Xproto.h>
 #include <stdio.h>
@@ -16,6 +19,9 @@
 
 //ML
 #include <FL/fl_ask.H>
+
+#endif
+
 #include <signal.h>
 
 ////////////////////////////////////////////////////////////////

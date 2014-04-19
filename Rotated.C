@@ -26,12 +26,18 @@
 
 /* ********************************************************************** */
 
+#ifndef FL_INTERNALS
+#define FL_INTERNALS
+
 #include <FL/x.H>
 #if FL_MAJOR_VERSION < 2
 # define XWindow Window
 #endif
 #include <FL/fl_draw.H>
 #include "Rotated.H"
+
+#endif
+
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
