@@ -227,9 +227,9 @@ static struct {int key; void (*func)();} keybindings[] = {
   {FL_ALT+FL_SHIFT+0xfe20,PreviousWindow}, // XK_ISO_Left_Tab
 #endif
 #if KWM_HOTKEYS && DESKTOPS // KWM uses these to switch desktops
-//   {FL_CTRL+FL_Tab,	NextDesk},
-//   {FL_CTRL+FL_SHIFT+FL_Tab,PreviousDesk},
-//   {FL_CTRL+FL_SHIFT+0xfe20,PreviousDesk}, // XK_ISO_Left_Tab
+  {FL_CTRL+FL_Tab,	NextDesk},
+  {FL_CTRL+FL_SHIFT+FL_Tab,PreviousDesk},
+  {FL_CTRL+FL_SHIFT+0xfe20,PreviousDesk}, // XK_ISO_Left_Tab
   {FL_CTRL+FL_F+1,	DeskNumber},
   {FL_CTRL+FL_F+2,	DeskNumber},
   {FL_CTRL+FL_F+3,	DeskNumber},
@@ -341,9 +341,10 @@ int test_shortcut(int shortcut) {
 int Handle_Hotkey() {
   for (int i = 0; keybindings[i].key; i++) {
     if (Fl::test_shortcut(keybindings[i].key) ||
+	(
 	(keybindings[i].key & 0xFFFF) == FL_Delete
 	&& Fl::event_key() == FL_BackSpace// fltk bug?
-	) {
+	)) {
       keybindings[i].func();
       return 1;
     }
