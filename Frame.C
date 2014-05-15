@@ -291,6 +291,11 @@ Frame::Frame(XWindow window, XWindowAttributes* existing) :
 
   if (!dont_set_event_mask) XAddToSaveSet(fl_display, window_);
   if (existing) set_state_flag(IGNORE_UNMAP);
+
+  sattr.backing_store = NotUseful;
+  sattr.win_gravity = NorthWestGravity;
+  XChangeWindowAttributes(fl_display, window_, CWBackingStore | CWWinGravity, &sattr);
+
   XReparentWindow(fl_display, window_, fl_xid(this), left, top);
   XSetWindowBorderWidth(fl_display, window_, 0);
   if (state_ == NORMAL) XMapWindow(fl_display, window_);
