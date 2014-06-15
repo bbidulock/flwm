@@ -1,10 +1,14 @@
+autom4te.cache
 compileit
 config.cache
 config.log
 config.status
 configure
+cscope.*
+flwm
 geany_run_script.sh
 logo.fl
 makedepend
 makeinclude
-cscope.*
+*.o
+.*.sw[nop]
