@@ -16,16 +16,19 @@ all:	makeinclude $(PROGRAM)
 $(PROGRAM) : $(OBJECTS)
 	$(CXX) $(LDFLAGS) -o $(PROGRAM) $(OBJECTS) $(LIBS)
 
-makeinclude: configure
+configure: configure.in
+	autoconf
+
+makeinclude: configure makeinclude.in
 	./configure
 include makeinclude
 
 .SUFFIXES : .fl .do .C .c .H
 
 .C.o :
-	$(CXX) $(CXXFLAGS) -c $<
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $<
 .C :
-	$(CXX) $(CXXFLAGS) -c $<
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $<
 .fl.C :
 	-fluid -c $<
 .fl.H :

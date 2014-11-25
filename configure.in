@@ -7,7 +7,6 @@ AC_PROG_CXX
 AC_PROG_INSTALL
 
 AC_PATH_XTRA
-echo "Ignoring libraries \"$X_PRE_LIBS\" requested by configure."
 dnl# LIBS="$LIBS$X_LIBS$X_PRE_LIBS"
 LIBS="$LIBS$X_LIBS"
 
