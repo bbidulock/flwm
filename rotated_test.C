@@ -86,7 +86,7 @@ int main(int argc, char **argv) {
   fonts->value(0);
   fonts->callback(font_cb);
 
-  Fl_Group *g = new Fl_Group(0,0,0,0);
+  Fl_Group *g = new Fl_Group(50,75,400,25);
   leftb = new Fl_Toggle_Button(50,75,50,25,"left");
   leftb->callback(button_cb);
   rightb = new Fl_Toggle_Button(100,75,50,25,"right");
@@ -102,13 +102,12 @@ int main(int argc, char **argv) {
   clipb = new Fl_Toggle_Button(350,75,50,25,"clip");
   clipb->callback(button_cb);
   g->resizable(insideb);
-  g->forms_end();
+  g->end();
 
   text= new RotText(100,225,200,100,input->value());
   text->box(FL_FRAME_BOX);
   text->align(FL_ALIGN_CENTER);
   window->resizable(text);
-  window->forms_end();
   window->show(argc,argv);
   return Fl::run();
 }
