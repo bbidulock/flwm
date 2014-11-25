@@ -1,7 +1,3 @@
-// Define "TEST" and it will compile to make a single fake window so
-// you can test the window controls.
-//#define TEST 1
-
 #define FL_INTERNALS 1
 #include "Frame.H"
 #include <X11/Xproto.h>
@@ -215,27 +211,30 @@ extern FL_API fltk::Color fl_cursor_bg;
 #else
 static int cursor = FL_CURSOR_ARROW;
 #endif
+bool test_mode = false;
 
 static void initialize() {
 
   Display* d = fl_display;
 
-#ifdef TEST
-  XWindow w = XCreateSimpleWindow(d, RootWindow(d, fl_screen),
-				 100, 100, 200, 300, 10,
-				 BlackPixel(fl_display, 0),
-//				 WhitePixel(fl_display, 0));
-				 0x1234);
-  Frame* frame = new Frame(w);
-  frame->label("flwm test window");
-  XSelectInput(d, w,
-	       ExposureMask | StructureNotifyMask |
-	       KeyPressMask | KeyReleaseMask | FocusChangeMask |
-	       KeymapStateMask |
-	       ButtonPressMask | ButtonReleaseMask |
-	       EnterWindowMask | LeaveWindowMask /*|PointerMotionMask*/
-	       );
-#else
+  if (test_mode) {
+    XWindow w = XCreateSimpleWindow(d, RootWindow(d, fl_screen),
+                                    100, 100, 200, 300, 10,
+                                    BlackPixel(fl_display, 0),
+                                    // WhitePixel(fl_display, 0));
+                                    0x1234);
+    Frame* frame = new Frame(w);
+    frame->label("flwm test window");
+    XSelectInput(d, w,
+                 ExposureMask | StructureNotifyMask |
+                 KeyPressMask | KeyReleaseMask | FocusChangeMask |
+                 KeymapStateMask |
+                 ButtonPressMask | ButtonReleaseMask |
+                 EnterWindowMask | LeaveWindowMask /*|PointerMotionMask*/
+                 );
+
+    return;
+  }
 
   Fl::add_handler(flwm_event_handler);
 
@@ -316,8 +315,6 @@ static void initialize() {
     (void)new Frame(wins[i],&attr);
   }
   XFree((void *)wins);
-
-#endif
 }
 
 ////////////////////////////////////////////////////////////////
@@ -335,6 +332,10 @@ int arg(int argc, char **argv, int &i) {
   // do single-word switches:
   if (!strcmp(s,"x")) {
     exit_flag = 1;
+    i++;
+    return 1;
+  } else if (!strcmp(s, "test")) {
+    test_mode = true;
     i++;
     return 1;
   }
@@ -398,6 +399,7 @@ int main(int argc, char** argv) {
 " -c[ursor] #\t\tCursor number for root\n"
 " -cfg color\t\tCursor color\n"
 " -cbg color\t\tCursor outline color"
+" -test\t\t\tTest the window graphics"
 );
 #ifndef FL_NORMAL_SIZE // detect new versions of fltk where this is a variable
   FL_NORMAL_SIZE = 12;
