@@ -3,7 +3,7 @@ SHELL=/bin/sh
 PROGRAM = flwm
 VERSION = 1.02
 
-CXXFILES = main.C Frame.C Rotated.C Menu.C FrameWindow.C Desktop.C Hotkeys.C
+CXXFILES = main.C Frame.C Menu.C FrameWindow.C Desktop.C Hotkeys.C
 
 MANPAGE = 1
 
@@ -80,6 +80,3 @@ OBJECTS_D = $(CXXFILES:.C=.do) $(CFILES:.c=.do)
 
 $(PROGRAM_D) : $(OBJECTS_D)
 	$(CXX) $(LDFLAGS) -o $(PROGRAM_D) $(OBJECTS_D) $(LIBS)
-
-rotated_test: Rotated.o rotated_test.C
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o rotated_test rotated_test.C Rotated.o $(LIBS) $(LIBS)
