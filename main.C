@@ -106,13 +106,14 @@ static int flwm_event_handler(int e) {
       window = fl_xevent->xmaprequest.window;
     }
     for (Frame* c = Frame::first; c; c = c->next)
-      if (c->window() == window || fl_xid(c) == window)
+      if (c->window() == window || fl_xid(c) == window) {
 #if CLICK_RAISES || CLICK_TO_TYPE
 	if (fl_xevent->type == ButtonPress) {click_raise(c); return 1;}
 	else {
 #endif
 	  return c->handle(fl_xevent);
 	}
+      }
     switch (fl_xevent->type) {
     case ButtonPress:
       printf("got a button press in main\n");
