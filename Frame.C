@@ -2,9 +2,6 @@
 // Some modifications by Michael A. Losh, tagged "ML" below, 
 // Last update: 2009-09-27
 
-#ifndef FL_INTERNALS
-#define FL_INTERNALS
-
 #define FL_INTERNALS 1
 #include "config.h"
 #include "Frame.H"
