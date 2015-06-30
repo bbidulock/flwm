@@ -8,6 +8,7 @@ includedir	=@includedir@
 libdir		=@libdir@
 srcdir		=@srcdir@
 VPATH		=@srcdir@
+datarootdir     =@datarootdir@
 
 # compiler names:
 CXX	=@CXX@

@@ -568,7 +568,7 @@ ShowTabMenu(int tab)
       if (d == Desktop::current()) first_on_desk = menu+n;
       for (c = Frame::first; c; c = c->next) {
 	if (c->state() == UNMAPPED || c->transient_for()) continue;
-	if (c->desktop() == d || !c->desktop() && d == Desktop::current()) {
+	if (c->desktop() == d || (!c->desktop() && d == Desktop::current())) {
 	  init(menu[n],(char*)c);
 #if FL_MAJOR_VERSION < 2
 	  init(menu[n],(char*)c);

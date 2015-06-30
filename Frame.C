@@ -1,13 +1,12 @@
 // Frame.C
 
+#define FL_INTERNALS 1
 #include "config.h"
 #include "Frame.H"
 #include "Desktop.H"
 #include <string.h>
 #include <stdio.h>
 #include <FL/fl_draw.H>
-#include "Rotated.H"
-
 
 static Atom wm_state = 0;
 static Atom wm_change_state;
@@ -915,7 +914,7 @@ void Frame::raise() {
   // preserving stacking order:
   for (p = &first; *p;) {
     Frame* f = *p;
-    if (f == this || f->is_transient_for(this) && f->state() != UNMAPPED) {
+    if (f == this || (f->is_transient_for(this) && f->state() != UNMAPPED)) {
       *p = f->next; // remove it from list
       if (previous) {
 	XWindowChanges w;
@@ -970,7 +969,7 @@ void Frame::lower() {
 
 void Frame::iconize() {
   for (Frame* c = first; c; c = c->next) {
-    if (c == this || c->is_transient_for(this) && c->state() != UNMAPPED)
+    if (c == this || (c->is_transient_for(this) && c->state() != UNMAPPED))
       c->state(ICONIC);
   }
 }
@@ -1163,7 +1162,7 @@ void Frame::show_hide_buttons() {
 #endif
   }
   if (min_h == max_h || flag(KEEP_ASPECT|NO_RESIZE) ||
-      !max_h_button.value() && by+label_w+2*BUTTON_H > h()-BUTTON_BOTTOM) {
+      (!max_h_button.value() && by+label_w+2*BUTTON_H > h()-BUTTON_BOTTOM)) {
     max_h_button.hide();
   } else {
     max_h_button.position(BUTTON_LEFT,by);
@@ -1171,7 +1170,7 @@ void Frame::show_hide_buttons() {
     by += BUTTON_H;
   }
   if (min_w == max_w || flag(KEEP_ASPECT|NO_RESIZE) ||
-      !max_w_button.value() && by+label_w+2*BUTTON_H > h()-BUTTON_BOTTOM) {
+      (!max_w_button.value() && by+label_w+2*BUTTON_H > h()-BUTTON_BOTTOM)) {
     max_w_button.hide();
   } else {
     max_w_button.position(BUTTON_LEFT,by);
@@ -1256,6 +1255,7 @@ void Frame::draw() {
     fl_frame("AAAAWWJJTTNN",0,0,w(),h());
 #endif
     if (!flag(THIN_BORDER) && label_h > 3) {
+      fl_push_clip(1, label_y, left, label_h);
 #ifdef SHOW_CLOCK
       if (active()) {
 	  int clkw = int(fl_width(clock_buf));
@@ -1274,8 +1274,9 @@ void Frame::draw() {
 	  // and the window height is short enough.  For now, we'll
 	  // assume this is not enough of a problem to be concerned
 	  // about.
-	  draw_rotated90(clock_buf, 1, label_y+3, left-1, label_h-6,
-			 Fl_Align(FL_ALIGN_BOTTOM|FL_ALIGN_CLIP));
+          fl_draw(90, clock_buf,
+                  (left + fl_height() + 1)/2 - fl_descent(),
+                  label_y+label_h-3);
       } else
 	  // Only show the clock on the active frame.
 	  XClearArea(fl_display, fl_xid(this), 1, label_y+3,
@@ -1283,8 +1284,10 @@ void Frame::draw() {
 #endif      
       fl_color(labelcolor());
       fl_font(TITLE_FONT_SLOT, TITLE_FONT_SIZE);
-      draw_rotated90(label(), 1, label_y+3, left-1, label_h-3,
-		     Fl_Align(FL_ALIGN_TOP|FL_ALIGN_CLIP));
+      fl_draw(90, label(),
+              (left + fl_height() + 1)/2 - fl_descent(),
+              label_y+3+fl_width(label()));
+      fl_pop_clip();
     }
   }
 }
@@ -1646,8 +1649,8 @@ int Frame::handle(int e) {
 	nh = iy+ih-(Fl::event_y_root()-dy);
       else {ny = y(); nh = h();}
       if (flag(KEEP_ASPECT)) {
-	if (nw-dwidth > nh-dwidth
-	    && (what&(FL_ALIGN_LEFT|FL_ALIGN_RIGHT))
+	if ((nw-dwidth > nh-dwidth
+             && (what&(FL_ALIGN_LEFT|FL_ALIGN_RIGHT)))
 	    || !(what&(FL_ALIGN_TOP|FL_ALIGN_BOTTOM)))
 	  nh = nw-dwidth+dheight;
 	else
