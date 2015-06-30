@@ -1,3 +1,4 @@
+*~
 autom4te.cache
 compileit
 config.cache
@@ -7,6 +8,7 @@ configure
 cscope.*
 flwm
 geany_run_script.sh
+htdocs
 logo.fl
 makedepend
 makeinclude

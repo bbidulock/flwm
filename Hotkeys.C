@@ -341,10 +341,9 @@ int test_shortcut(int shortcut) {
 int Handle_Hotkey() {
   for (int i = 0; keybindings[i].key; i++) {
     if (Fl::test_shortcut(keybindings[i].key) ||
-	(
-	(keybindings[i].key & 0xFFFF) == FL_Delete
-	&& Fl::event_key() == FL_BackSpace// fltk bug?
-	)) {
+	((keybindings[i].key & 0xFFFF) == FL_Delete
+         && Fl::event_key() == FL_BackSpace)// fltk bug?
+	) {
       keybindings[i].func();
       return 1;
     }
