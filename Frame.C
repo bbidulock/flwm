@@ -470,8 +470,10 @@ int Frame::force_y_onscreen(int Y, int H) {
 
 // fltk bug: it does not clear these pointers when window is deleted,
 // causing flwm to crash on window close sometimes:
+#if FL_MAJOR_VERSION == 1 && (FL_MINOR_VERSION > 3 || (FL_MINOR_VERSION == 3 && FL_PATCH_VERSION < 3))
 extern Fl_Window *fl_xfocus;
 extern Fl_Window *fl_xmousewin;
+#endif
 
 Frame::~Frame() {
 
@@ -485,8 +487,10 @@ Frame::~Frame() {
 
 #if FL_MAJOR_VERSION < 2
   // fix fltk bug:
+#if FL_MAJOR_VERSION == 1 && (FL_MINOR_VERSION > 3 || (FL_MINOR_VERSION == 3 && FL_PATCH_VERSION < 3))
   fl_xfocus = 0;
   fl_xmousewin = 0;
+#endif
   Fl::focus_ = 0;
 #endif
 
