@@ -114,5 +114,5 @@ int main(int argc, char **argv) {
 }
 
 //
-// End of "$Id: rotated_test.C,v 1.1 2000/01/18 01:05:49 spitzak Exp $".
+// End of "$Id$".
 //
