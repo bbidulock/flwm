@@ -147,7 +147,7 @@ label_measure(const Fl_Label* o, int& W, int& H)
 
 ////////////////////////////////////////////////////////////////
 
-#if ! ASK_FOR_NEW_DESKTOP_NAME
+#if ASK_FOR_NEW_DESKTOP_NAME
 static void
 cancel_cb(Fl_Widget* w, void*)
 {
