@@ -115,7 +115,7 @@ static void MoveDown(void) { // Ctrl+Alt+Down
 	MoveFrame(0, +1);
 }
 static void GrowFrame(int wbump, int hbump) {
-  int wincr, hincr, nx, ny, nw, nh, xspace, yspace;
+  int nx, ny, nw, nh;
   Frame* f = Frame::activeFrame();
   if (f) {
 	  int minw = 8 * BUTTON_W;
