@@ -38,13 +38,13 @@ include makeinclude
 
 clean :
 	-@ rm -f *.o $(PROGRAM) $(CLEAN) core *~ makedepend
-	@touch makedepend
 
 depend:
 	$(MAKEDEPEND) -I.. $(CXXFLAGS) $(CXXFILES) $(CFILES) > makedepend
+
 makedepend:
-	touch makedepend
-include makedepend
+
+-include makedepend
 
 install: $(PROGRAM)
 	$(INSTALL) -s $(PROGRAM) $(bindir)/$(PROGRAM)
@@ -55,9 +55,8 @@ uninstall:
 	-@ rm -f $(mandir)/man$(MANPAGE)/$(PROGRAM).$(MANPAGE)
 
 dist:
-	cat /dev/null > makedepend
 	-@mkdir $(PROGRAM)-$(VERSION)
-	-@ln README Makefile configure install-sh makedepend *.C *.H *.h *.in *.fl $(PROGRAM).$(MANPAGE) flwm_wmconfig $(PROGRAM)-$(VERSION)
+	-@ln README Makefile configure install-sh *.C *.H *.h *.in *.fl $(PROGRAM).$(MANPAGE) flwm_wmconfig $(PROGRAM)-$(VERSION)
 	tar -cvzf $(PROGRAM)-$(VERSION).tgz $(PROGRAM)-$(VERSION)
 	-@rm -r $(PROGRAM)-$(VERSION)
 
