@@ -473,7 +473,7 @@ Frame::~Frame() {
     delete[] window_Colormaps;
   }
   //if (iconlabel()) XFree((char*)iconlabel());
-  if (label())     XFree((char*)label());
+  if (label()) XFree((char*)label());
 }
 
 ////////////////////////////////////////////////////////////////
@@ -1284,9 +1284,10 @@ void Frame::draw() {
 #endif      
       fl_color(labelcolor());
       fl_font(TITLE_FONT_SLOT, TITLE_FONT_SIZE);
-      fl_draw(90, label(),
-              (left + fl_height() + 1)/2 - fl_descent(),
-              label_y+3+fl_width(label()));
+      if (label() && *label())
+	fl_draw(90, label(),
+		(left + fl_height() + 1)/2 - fl_descent(),
+		label_y+3+fl_width(label()));
       fl_pop_clip();
     }
   }
