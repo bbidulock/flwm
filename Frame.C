@@ -463,6 +463,7 @@ int Frame::force_y_onscreen(int Y, int H) {
 // The destructor is called on DestroyNotify, so I don't have to do anything
 // to the contained window, which is already been destroyed.
 
+#if FL_MAJOR_VERSION < 2 && FL_MINOR_VERSION < 3
 // fltk bug: it does not clear these pointers when window is deleted,
 // causing flwm to crash on window close sometimes:
 #if FL_MAJOR_VERSION == 1 && (FL_MINOR_VERSION > 3 || (FL_MINOR_VERSION == 3 && FL_PATCH_VERSION < 3))
@@ -480,7 +481,7 @@ Frame::~Frame() {
   // a legal state value to this location:
   state_ = UNMAPPED;
 
-#if FL_MAJOR_VERSION < 2
+#if FL_MAJOR_VERSION < 2 && FL_MINOR_VERSION < 3
   // fix fltk bug:
 #if FL_MAJOR_VERSION == 1 && (FL_MINOR_VERSION > 3 || (FL_MINOR_VERSION == 3 && FL_PATCH_VERSION < 3))
   fl_xfocus = 0;
@@ -503,7 +504,7 @@ Frame::~Frame() {
     delete[] window_Colormaps;
   }
   //if (iconlabel()) XFree((char*)iconlabel());
-  if (label())     XFree((char*)label());
+  if (label()) XFree((char*)label());
 }
 
 ////////////////////////////////////////////////////////////////
@@ -1344,9 +1345,10 @@ void Frame::draw() {
 #endif      
       fl_color(labelcolor());
       fl_font(TITLE_FONT_SLOT, TITLE_FONT_SIZE);
-      fl_draw(90, label(),
-              (left + fl_height() + 1)/2 - fl_descent(),
-              label_y+3+fl_width(label()));
+      if (label() && *label())
+	fl_draw(90, label(),
+		(left + fl_height() + 1)/2 - fl_descent(),
+		label_y+3+fl_width(label()));
       fl_pop_clip();
     }
   }
