@@ -463,10 +463,9 @@ int Frame::force_y_onscreen(int Y, int H) {
 // The destructor is called on DestroyNotify, so I don't have to do anything
 // to the contained window, which is already been destroyed.
 
-#if FL_MAJOR_VERSION < 2 && FL_MINOR_VERSION < 3
+#if FL_MAJOR_VERSION == 1 && (FL_MINOR_VERSION > 3 || (FL_MINOR_VERSION == 3 && FL_PATCH_VERSION < 3))
 // fltk bug: it does not clear these pointers when window is deleted,
 // causing flwm to crash on window close sometimes:
-#if FL_MAJOR_VERSION == 1 && (FL_MINOR_VERSION > 3 || (FL_MINOR_VERSION == 3 && FL_PATCH_VERSION < 3))
 extern Fl_Window *fl_xfocus;
 extern Fl_Window *fl_xmousewin;
 #endif
@@ -481,12 +480,10 @@ Frame::~Frame() {
   // a legal state value to this location:
   state_ = UNMAPPED;
 
-#if FL_MAJOR_VERSION < 2 && FL_MINOR_VERSION < 3
-  // fix fltk bug:
 #if FL_MAJOR_VERSION == 1 && (FL_MINOR_VERSION > 3 || (FL_MINOR_VERSION == 3 && FL_PATCH_VERSION < 3))
+  // fix fltk bug:
   fl_xfocus = 0;
   fl_xmousewin = 0;
-#endif
   Fl::focus_ = 0;
 #endif
 
