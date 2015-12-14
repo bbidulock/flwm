@@ -1,7 +1,7 @@
 SHELL=/bin/sh
 
 PROGRAM = flwm
-VERSION = 1.15
+VERSION = 1.16
 
 CXXFILES = main.C Frame.C Menu.C FrameWindow.C Desktop.C Hotkeys.C
 
@@ -56,7 +56,7 @@ uninstall:
 
 dist:
 	-@mkdir $(PROGRAM)-$(VERSION)
-	-@ln README Makefile configure install-sh *.C *.H *.h *.in *.fl $(PROGRAM).$(MANPAGE) flwm_wmconfig $(PROGRAM)-$(VERSION)
+	-@ln README Makefile configure install-sh *.C *.H *.h *.in *.fl $(PROGRAM).$(MANPAGE) flwm_wmconfig flwm.desktop logo.png $(PROGRAM)-$(VERSION)
 	tar -cvzf $(PROGRAM)-$(VERSION).tgz $(PROGRAM)-$(VERSION)
 	-@rm -r $(PROGRAM)-$(VERSION)
 
